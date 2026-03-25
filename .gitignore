@@ -1,0 +1,7 @@
+*.xlsx
+*.py
+*.bat
+data.json
+result.txt
+__pycache__/
+.env
