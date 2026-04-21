@@ -1,0 +1,520 @@
+// Initialize the map (デフォルトは広島市中心部付近)
+const map = L.map('map').setView([34.460, 132.470], 12);
+
+// Add OpenStreetMap tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+// Colors for categories
+const categoryColors = {
+    "居宅": "#3498db",   // Blue
+    "施設": "#2ecc71",   // Green
+    "病院": "#e74c3c",   // Red
+    "障害": "#9b59b6",   // Purple
+    "その他": "#95a5a6"  // Gray
+};
+
+// Create legend in Header
+const legendContainer = document.getElementById('legend');
+for (const [cat, color] of Object.entries(categoryColors)) {
+    if (cat === "その他") continue;
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-color" style="background-color: ${color}"></div><span>${cat}</span>`;
+    legendContainer.appendChild(item);
+}
+
+// Function to create custom SVG marker icon based on category color
+function createCustomIcon(categoryColor) {
+    const svgIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="32" height="42">
+        <path fill="${categoryColor}" stroke="#ffffff" stroke-width="2.5" d="M16 2C8.268 2 2 8.268 2 16c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z"/>
+        <circle fill="#ffffff" cx="16" cy="16" r="6"/>
+    </svg>`;
+    
+    return L.divIcon({
+        html: svgIcon,
+        className: 'custom-leaflet-marker',
+        iconSize: [32, 42],
+        iconAnchor: [16, 42],
+        popupAnchor: [0, -40]  // Offset popup so it doesn't cover the marker
+    });
+}
+
+// Load JSON data and plot markers
+const mapData = [
+  {
+    "category": "居宅",
+    "name": "ＩＧＬ居宅介護支援事業所ベルシャレー",
+    "address": "広島県広島市安佐南区上安6-31-1",
+    "phone": "082-830-3366",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（社福）ＩＧＬ学園福祉会 / 事業所番号:3470200142 / 詳細:https://www.heartpage.jp/hiroshima/10159233",
+    "lat": 34.483097,
+    "lng": 132.444809
+  },
+  {
+    "category": "居宅",
+    "name": "ＩＧＬ居宅介護支援事業所シャレー",
+    "address": "広島県広島市安佐南区上安6-31-2",
+    "phone": "082-830-3326",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（社福）ＩＧＬ学園福祉会 / 事業所番号:3470212097 / 詳細:https://www.heartpage.jp/hiroshima/10159234",
+    "lat": 34.483097,
+    "lng": 132.444809
+  },
+  {
+    "category": "居宅",
+    "name": "ＩＧＬ居宅介護支援事業所アルペンローゼ",
+    "address": "広島県広島市安佐南区上安6-27-12-12",
+    "phone": "082-830-3377",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（社福）ＩＧＬ学園福祉会 / 事業所番号:3470207097 / 詳細:https://www.heartpage.jp/hiroshima/10159232",
+    "lat": 34.481506,
+    "lng": 132.444427
+  },
+  {
+    "category": "居宅",
+    "name": "サンキ・ウエルビィ介護センター安佐南",
+    "address": "広島県広島市安佐南区中筋4-4-21-201",
+    "phone": "082-831-1070",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:サンキ・ウエルビィ（株） / 事業所番号:3470201892 / 詳細:https://www.heartpage.jp/hiroshima/10159211",
+    "lat": 34.45929,
+    "lng": 132.480225
+  },
+  {
+    "category": "居宅",
+    "name": "居宅介護支援事業所川内の里",
+    "address": "広島県広島市安佐南区川内1-21-29",
+    "phone": "082-831-1217",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（社福）楽友会 / 事業所番号:3470203542 / 詳細:https://www.heartpage.jp/hiroshima/10159194",
+    "lat": 34.456364,
+    "lng": 132.484589
+  },
+  {
+    "category": "居宅",
+    "name": "居宅介護支援事業所みゆ",
+    "address": "広島県広島市安佐南区東野3-23-6",
+    "phone": "082-554-0701",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（一社）あすなろ / 事業所番号:3470215637 / 詳細:https://www.heartpage.jp/hiroshima/10284488",
+    "lat": 34.452801,
+    "lng": 132.484177
+  },
+  {
+    "category": "居宅",
+    "name": "協同居宅介護支援事業所",
+    "address": "広島県広島市安佐南区西原9-8-22",
+    "phone": "082-874-4115",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:広島医療生活協同組合 / 事業所番号:3470200456 / 詳細:https://www.heartpage.jp/hiroshima/10159206",
+    "lat": 34.446827,
+    "lng": 132.471756
+  },
+  {
+    "category": "居宅",
+    "name": "いろは",
+    "address": "広島県広島市安佐北区口田3-16-14",
+    "phone": "082-516-7876",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（株）たなか福祉サービス / 事業所番号:3470108949 / 詳細:https://www.heartpage.jp/hiroshima/10206566",
+    "lat": 34.468002,
+    "lng": 132.50174
+  },
+  {
+    "category": "居宅",
+    "name": "居宅介護支援事業所和",
+    "address": "広島県広島市安佐南区山本新町4-3-11",
+    "phone": "082-850-1008",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（社福）メインストリーム / 事業所番号:3470213087 / 詳細:https://www.heartpage.jp/hiroshima/10159224",
+    "lat": 34.447517,
+    "lng": 132.436752
+  },
+  {
+    "category": "居宅",
+    "name": "サンキ・ウエルビィ介護センター高陽",
+    "address": "広島県広島市安佐北区口田3-32-2",
+    "phone": "082-841-0080",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:サンキ・ウエルビィ（株） / 事業所番号:3470105663 / 詳細:https://www.heartpage.jp/hiroshima/10159285",
+    "lat": 34.464832,
+    "lng": 132.502213
+  },
+  {
+    "category": "居宅",
+    "name": "居宅介護支援事業所サンバリー高陽",
+    "address": "広島県広島市安佐北区口田4-20-13",
+    "phone": "082-841-0036",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（医）おきた内科クリニック / 事業所番号:3470103825 / 詳細:https://www.heartpage.jp/hiroshima/10159287",
+    "lat": 34.468586,
+    "lng": 132.50647
+  },
+  {
+    "category": "居宅",
+    "name": "ぎおん牛田病院居宅介護支援事業所",
+    "address": "広島県広島市安佐南区西原8-28-14-103",
+    "phone": "082-836-6266",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（医社）聖愛会 / 事業所番号:3470212857 / 詳細:https://www.heartpage.jp/hiroshima/10238924",
+    "lat": 34.442402,
+    "lng": 132.470428
+  },
+  {
+    "category": "居宅",
+    "name": "ケアプランセンターやすらぎ西原",
+    "address": "広島県広島市安佐南区西原8-33-3",
+    "phone": "082-962-0170",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（株）ウェルケア / 事業所番号:3470214416 / 詳細:https://www.heartpage.jp/hiroshima/10226403",
+    "lat": 34.443123,
+    "lng": 132.474442
+  },
+  {
+    "category": "居宅",
+    "name": "ケアマネオフィスそらいろ",
+    "address": "広島県広島市安佐南区祇園3-16-1-101",
+    "phone": "082-962-4985",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（同）オフィスＳｏｒａ彩 / 事業所番号:3470214424 / 詳細:https://www.heartpage.jp/hiroshima/10258868",
+    "lat": 34.440903,
+    "lng": 132.460388
+  },
+  {
+    "category": "居宅",
+    "name": "ケアプランよりしま",
+    "address": "広島県広島市安佐南区祇園2-44-6",
+    "phone": "082-962-1232",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "法人名:（医）ユア・メディック / 事業所番号:3470207550 / 詳細:https://www.heartpage.jp/hiroshima/10206563",
+    "lat": 34.440002,
+    "lng": 132.464233
+  },
+  {
+    "category": "施設",
+    "name": "介護老人保健施設ベルローゼ",
+    "address": "広島県広島市安佐南区上安6-31-1",
+    "phone": "082-830-3333",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:老健】法人名:（社福）ＩＧＬ学園福祉会 / 詳細:https://www.heartpage.jp/hiroshima/10160735",
+    "lat": 34.483097,
+    "lng": 132.444809
+  },
+  {
+    "category": "施設",
+    "name": "老人保健施設しんあい",
+    "address": "広島県広島市安佐南区伴東7-9-3",
+    "phone": "082-848-8888",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:老健】法人名:（医）信愛会 / 詳細:https://www.heartpage.jp/hiroshima/10160736",
+    "lat": 34.46468,
+    "lng": 132.420868
+  },
+  {
+    "category": "施設",
+    "name": "介護付き有料老人ホームヴィーヴル祇園",
+    "address": "広島県広島市安佐南区祇園4-8-7",
+    "phone": "082-874-2227",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:特定施設】法人名:（株）ヴィーヴル / 詳細:https://www.heartpage.jp/hiroshima/10160800",
+    "lat": 34.440193,
+    "lng": 132.456009
+  },
+  {
+    "category": "施設",
+    "name": "小規模多機能センター緑井",
+    "address": "広島県広島市安佐南区緑井7-5-11",
+    "phone": "082-962-6541",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:小多機能】法人名:（有）サカコーポレーション / 詳細:https://www.heartpage.jp/hiroshima/10160408",
+    "lat": 34.472652,
+    "lng": 132.480911
+  },
+  {
+    "category": "施設",
+    "name": "小規模多機能ホームなのか",
+    "address": "広島県広島市安佐南区古市3-4-5",
+    "phone": "082-831-1620",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:小多機能】法人名:（株）松広 / 詳細:https://www.heartpage.jp/hiroshima/10160411",
+    "lat": 34.451778,
+    "lng": 132.469849
+  },
+  {
+    "category": "施設",
+    "name": "ショートステイいわや",
+    "address": "広島県広島市安佐南区緑井3-40-30",
+    "phone": "082-831-0108",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期生活】法人名:（医）あすか / 詳細:https://www.heartpage.jp/hiroshima/10160504",
+    "lat": 34.477146,
+    "lng": 132.469254
+  },
+  {
+    "category": "施設",
+    "name": "ショートステイアルペンローゼ",
+    "address": "広島県広島市安佐南区上安6-27-12-12",
+    "phone": "082-830-3422",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期生活】法人名:（社福）ＩＧＬ学園福祉会 / 詳細:https://www.heartpage.jp/hiroshima/10160518",
+    "lat": 34.481506,
+    "lng": 132.444427
+  },
+  {
+    "category": "施設",
+    "name": "特別養護老人ホーム和",
+    "address": "広島県広島市安佐南区山本新町4-3-11",
+    "phone": "082-850-1008",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期生活】法人名:（社福）メインストリーム / 詳細:https://www.heartpage.jp/hiroshima/10160514",
+    "lat": 34.447517,
+    "lng": 132.436752
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイ　きゃんばす",
+    "address": "安佐南区緑井七丁目１８番８－４０４号",
+    "phone": "080-3058-6416",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:合同会社ｃａｎｖａｓ / 出典:資料20260313",
+    "lat": 34.472935,
+    "lng": 132.480759
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイいろどり　緑井",
+    "address": "安佐南区緑井一丁目２８番２９－２０２号、２０３号",
+    "phone": "090-4108-4930",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:株式会社いろどり / 出典:資料20260313",
+    "lat": 34.462223,
+    "lng": 132.473618
+  },
+  {
+    "category": "障害",
+    "name": "ＹＥＬＬ　せせらぎ",
+    "address": "安佐南区川内五丁目６番３３号",
+    "phone": "082-225-7002",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:合同会社アーク広島 / 出典:資料20260313",
+    "lat": 34.469131,
+    "lng": 132.48616
+  },
+  {
+    "category": "障害",
+    "name": "障がい者ショートステイゆたか",
+    "address": "安佐南区川内二丁目３番５０－２０４号",
+    "phone": "082-295-9997",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:株式会社ゆたか / 出典:資料20260313",
+    "lat": 34.464394,
+    "lng": 132.484695
+  },
+  {
+    "category": "障害",
+    "name": "グループホームおおたがわ短期入所",
+    "address": "安佐南区大町東一丁目１２番１０号",
+    "phone": "082-831-7735",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:社会福祉法人三矢会 / 出典:資料20260313",
+    "lat": 34.454376,
+    "lng": 132.468002
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイのんびり",
+    "address": "安佐南区伴東一丁目６番１２－１０号",
+    "phone": "082-962-3907",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:株式会社ＤＡＹＳ / 出典:資料20260313",
+    "lat": 34.468807,
+    "lng": 132.424911
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイ　ボヌール川内",
+    "address": "安佐南区川内三丁目５番４０号",
+    "phone": "082-877-7667",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:有限会社榮成興産 / 出典:資料20260313",
+    "lat": 34.461899,
+    "lng": 132.48764
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイ　ななつぼし",
+    "address": "安佐南区川内一丁目３２番２３－６－３０１号",
+    "phone": "090-7771-5615",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:合同会社ななつぼし / 出典:資料20260313",
+    "lat": 34.455429,
+    "lng": 132.482391
+  },
+  {
+    "category": "障害",
+    "name": "ショートステイりらっくす祇園",
+    "address": "安佐南区祇園二丁目１３番１７号",
+    "phone": "082-555-9980",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:有限会社リラックス / 出典:資料20260313",
+    "lat": 34.44434,
+    "lng": 132.467224
+  },
+  {
+    "category": "障害",
+    "name": "せせらぎ",
+    "address": "安佐南区祇園六丁目３１番３号",
+    "phone": "082-875-8801",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:短期日中】法人名:社会福祉法人あさみなみ / 出典:資料20260313",
+    "lat": 34.443169,
+    "lng": 132.464401
+  },
+  {
+    "category": "障害",
+    "name": "グループホームおおたがわ",
+    "address": "安佐南区大町東一丁目１２番１０号",
+    "phone": "082-831-7735",
+    "priority": "中",
+    "status": "未接触",
+    "contact_person": "",
+    "note": "【分類:共同生活】法人名:社会福祉法人三矢会 / 出典:資料20260313",
+    "lat": 34.454376,
+    "lng": 132.468002
+  }
+];
+
+(function() {
+    const data = mapData;
+        let bounds = []; // To automatically calculate center/zoom
+
+        data.forEach(item => {
+            if (!item.lat || !item.lng) return;
+
+            // Gather bounds to zoom later
+            bounds.push([item.lat, item.lng]);
+
+            // Marker Color
+            const color = categoryColors[item.category] || categoryColors["その他"];
+            const icon = createCustomIcon(color);
+            
+            // Format Priority Badge
+            let priorityClass = 'priority-none';
+            if (item.priority && item.priority.includes('高')) priorityClass = 'priority-high';
+            else if (item.priority && item.priority.includes('中')) priorityClass = 'priority-mid';
+            else if (item.priority && item.priority.includes('低')) priorityClass = 'priority-low';
+            
+            const priorityVal = item.priority && item.priority !== "None" ? item.priority : "設定なし";
+            const priorityHtml = item.priority && item.priority !== "None" ? `<span class="badge ${priorityClass}">優先度: ${item.priority}</span>` : '';
+            
+            // Format Optional Fields
+            const safeText = text => text === "None" || !text ? "" : text;
+            const statusHtml = safeText(item.status) ? `<p><strong>ステータス:</strong> ${item.status}</p>` : '';
+            const contactHtml = safeText(item.contact_person) ? `<p><strong>担当者:</strong> ${item.contact_person}</p>` : '';
+            const phoneHtml = safeText(item.phone) ? `<p><strong>電話:</strong> <a href="tel:${item.phone}">${item.phone}</a></p>` : '';
+            
+            // Format Note with special styling
+            let noteHtml = "";
+            if (safeText(item.note)) {
+                // Formatting long notes properly
+                const formattedNote = item.note.replace(/\n/g, '<br>');
+                noteHtml = `<p style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><strong>備考:</strong><br><span style="font-size:0.85rem;color:#555;">${formattedNote}</span></p>`;
+            }
+
+            // Popup HTML Template
+            const popupContent = `
+                <div class="popup-header" style="background-color: ${color}">
+                    ${safeText(item.name) || "名称不明"}
+                </div>
+                <div class="popup-body">
+                    ${priorityHtml}
+                    <p><strong>住所:</strong> ${safeText(item.address) || "不明"}</p>
+                    ${phoneHtml}
+                    ${contactHtml}
+                    ${statusHtml}
+                    ${noteHtml}
+                </div>
+            `;
+
+            // Add marker to map
+            L.marker([item.lat, item.lng], { icon: icon })
+                .bindPopup(popupContent, { minWidth: 280, maxWidth: 350 })
+                .addTo(map);
+        });
+
+        // データの範囲に合わせて地図の中心とズームを調整
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [30, 30] });
+        }
+    })();
