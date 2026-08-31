@@ -1,0 +1,32 @@
+{
+  "ダッシュボード": {
+    "filter_col_idx": null,
+    "is_blank_filter": false,
+    "target_col_name_idx": null,
+    "target_col_letter": null
+  },
+  "居宅": {
+    "filter_col_idx": 9,
+    "is_blank_filter": true,
+    "target_col_name_idx": 10,
+    "target_col_letter": "K"
+  },
+  "施設": {
+    "filter_col_idx": 10,
+    "is_blank_filter": true,
+    "target_col_name_idx": 10,
+    "target_col_letter": "K"
+  },
+  "病院": {
+    "filter_col_idx": 9,
+    "is_blank_filter": true,
+    "target_col_name_idx": 9,
+    "target_col_letter": "J"
+  },
+  "障害・包括": {
+    "filter_col_idx": 10,
+    "is_blank_filter": true,
+    "target_col_name_idx": 10,
+    "target_col_letter": "K"
+  }
+}
