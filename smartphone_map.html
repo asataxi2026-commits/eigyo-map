@@ -2,2442 +2,5478 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>営業の関係 - エリアマップ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>あさタクシー 営業先エリアマップ | 最新10月進捗連動</title>
+    <meta name="description" content="あさタクシー営業先管理シート連動・最新進捗状況リアルタイム反映エリアマップ（スマートフォン対応）">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
     <!-- Custom CSS -->
-    <style>body, html {
+    <style>:root {
+    --primary: #0f172a;
+    --primary-light: #1e293b;
+    --accent: #f59e0b;
+    --accent-hover: #d97706;
+    
+    --cat-kyotaku: #0284c7;     /* 居宅: スカイブルー */
+    --cat-shisetsu: #10b981;    /* 施設: エメラルド */
+    --cat-byoin: #ef4444;       /* 病院: クリムゾンレッド */
+    --cat-shogai: #8b5cf6;      /* 障害・包括: パープル */
+    
+    --status-visited: #059669;  /* 訪問済: グリーン */
+    --status-unvisited: #ea580c;/* 未接触: アンバーオレンジ */
+    
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.15);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    width: 100%;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-main);
+    background-color: var(--bg-main);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
+/* ==========================================================================
+   Header Styling
+   ========================================================================== */
 #header {
-    background-color: #2c3e50;
-    color: white;
-    padding: 10px 20px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 10px 14px 8px 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000;
+    gap: 10px;
 }
 
-#header h1 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.legend {
-    display: flex;
-    gap: 15px;
-    font-size: 0.9rem;
-    flex-wrap: wrap;
-}
-
-.legend-item {
+.brand {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
 }
 
-.legend-color {
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    border: 2px solid white;
+.brand-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-#map {
-    flex-grow: 1;
+.brand-text h1 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.brand-text .sub-text {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.header-stats {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.stat-pill {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    backdrop-filter: blur(4px);
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+
+.stat-pill strong {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.stat-pill.visited {
+    background: rgba(16, 185, 129, 0.25);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #6ee7b7;
+}
+
+.stat-pill.unvisited {
+    background: rgba(234, 88, 12, 0.25);
+    border: 1px solid rgba(234, 88, 12, 0.5);
+    color: #fdba74;
+}
+
+/* Search Bar */
+.search-container {
+    position: relative;
     width: 100%;
 }
 
-/* Custom Marker styling */
-.custom-leaflet-marker {
-    background: none;
-    border: none;
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
-/* Popup style overrides */
-.leaflet-popup-content-wrapper {
+#searchInput {
+    width: 100%;
+    padding: 8px 32px 8px 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#searchInput:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+#searchInput::placeholder {
+    color: #94a3b8;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Filter Bar */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-group {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.divider-v {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+.chip {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chip .badge {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-size: 0.68rem;
+}
+
+.chip:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.chip.active {
+    background: #ffffff;
+    color: var(--primary);
+    border-color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.chip.active .badge {
+    background: #e2e8f0;
+    color: var(--primary);
+}
+
+/* Category specific colors on chips */
+.chip.cat-kyotaku.active { background: var(--cat-kyotaku); color: #fff; border-color: var(--cat-kyotaku); }
+.chip.cat-shisetsu.active { background: var(--cat-shisetsu); color: #fff; border-color: var(--cat-shisetsu); }
+.chip.cat-byoin.active { background: var(--cat-byoin); color: #fff; border-color: var(--cat-byoin); }
+.chip.cat-shogai.active { background: var(--cat-shogai); color: #fff; border-color: var(--cat-shogai); }
+
+.chip.chip-visited.active { background: var(--status-visited); color: #fff; border-color: var(--status-visited); }
+.chip.chip-unvisited.active { background: var(--status-unvisited); color: #fff; border-color: var(--status-unvisited); }
+
+/* ==========================================================================
+   Map Styling
+   ========================================================================== */
+#map {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Custom Marker Styling */
+.custom-pin-wrapper {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-pin-wrapper:hover {
+    transform: scale(1.18);
+    z-index: 9999 !important;
+}
+
+.pin-shadow {
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 50%;
+    filter: blur(1.5px);
+}
+
+.pin-unvisited-ring {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px dashed #ea580c;
+    border-radius: 50%;
+    animation: pulseRing 1.8s infinite;
+}
+
+@keyframes pulseRing {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 0.3; }
+    100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+/* Ando Office Marker */
+.office-pin {
+    animation: bounceOffice 2.4s infinite ease-in-out;
+}
+@keyframes bounceOffice {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* GPS User Location Marker */
+.user-gps-dot {
+    width: 16px;
+    height: 16px;
+    background: #2563eb;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+    position: relative;
+}
+.user-gps-pulse {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 36px;
+    height: 36px;
+    background: rgba(37, 99, 235, 0.3);
+    border-radius: 50%;
+    animation: gpsPulse 2s infinite ease-out;
+}
+@keyframes gpsPulse {
+    0% { transform: scale(0.4); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ==========================================================================
+   Leaflet Popup Customization
+   ========================================================================== */
+.leaflet-popup-content-wrapper {
     padding: 0;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .leaflet-popup-content {
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.4;
+    font-size: 0.88rem;
+}
+
+.leaflet-popup-tip {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.popup-card {
+    min-width: 270px;
+    max-width: 320px;
 }
 
 .popup-header {
-    background-color: #34495e;
-    color: white;
-    padding: 12px 15px;
-    font-weight: bold;
+    padding: 12px 14px;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.popup-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-category-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.popup-distance-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.popup-title {
+    margin: 4px 0 0 0;
     font-size: 1.05rem;
-    margin-bottom: 0px;
+    font-weight: 700;
+    line-height: 1.3;
 }
 
 .popup-body {
-    padding: 15px;
-    background-color: #fcfcfc;
+    padding: 12px 14px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.popup-body p {
-    margin: 6px 0;
-    font-size: 0.95rem;
-    color: #333;
-}
-
-.popup-body a {
-    color: #2980b9;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
+/* Status banner in popup */
+.popup-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
     font-size: 0.8rem;
-    font-weight: bold;
-    color: white;
-    margin-bottom: 8px;
+    font-weight: 600;
+}
+.popup-status-banner.visited {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+.popup-status-banner.unvisited {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
 }
 
-.badge.priority-high { background-color: #e74c3c; /* Red */ }
-.badge.priority-mid { background-color: #f39c12; /* Orange */ }
-.badge.priority-low { background-color: #3498db; /* Blue */ }
-.badge.priority-none { background-color: #95a5a6; /* Gray */ }
+.popup-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.82rem;
+    color: #475569;
+}
+
+.meta-row {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+.meta-label {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    width: 60px;
+    flex-shrink: 0;
+}
+.meta-value {
+    color: #1e293b;
+    word-break: break-all;
+}
+
+/* Action Buttons (Call & Google Maps Nav) */
+.popup-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 8px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.btn-call {
+    background: #0284c7;
+    color: #ffffff !important;
+}
+.btn-call:hover { background: #0369a1; }
+
+.btn-nav {
+    background: #10b981;
+    color: #ffffff !important;
+}
+.btn-nav:hover { background: #059669; }
+
+.btn-action:active {
+    transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Floating Action Controls (FAB)
+   ========================================================================== */
+.floating-controls {
+    position: fixed;
+    right: 14px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 800;
+}
+
+.fab-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    color: var(--text-main);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    padding: 8px 12px;
+    border-radius: 9999px;
+    box-shadow: var(--shadow-lg);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fab-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+
+.fab-btn:active {
+    transform: scale(0.95);
+}
+
+.fab-icon {
+    font-size: 1rem;
+}
+
+.fab-primary {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border-color: #334155;
+}
+
+/* ==========================================================================
+   Bottom List Drawer (Slide-up Panel)
+   ========================================================================== */
+.list-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    max-height: 60vh;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.list-drawer.open {
+    transform: translateY(0);
+}
+
+.drawer-header {
+    padding: 10px 16px 8px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: #fafafa;
+    border-radius: 18px 18px 0 0;
+}
+
+.drawer-handle {
+    width: 40px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+    margin: 0 auto 8px auto;
+}
+
+.drawer-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.drawer-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-select {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+}
+
+.drawer-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.drawer-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px 14px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Drawer Card Item */
+.drawer-item-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.drawer-item-card:hover {
+    border-color: var(--cat-kyotaku);
+    box-shadow: var(--shadow-sm);
+    background: #f8fafc;
+}
+
+.drawer-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.drawer-card-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.drawer-card-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.drawer-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 640px) {
+    #header {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+    .brand-text h1 {
+        font-size: 0.95rem;
+    }
+    .brand-text .sub-text {
+        font-size: 0.68rem;
+    }
+    .header-stats {
+        gap: 4px;
+    }
+    .stat-pill {
+        font-size: 0.68rem;
+        padding: 2px 6px;
+    }
+    .chip {
+        padding: 3px 8px;
+        font-size: 0.72rem;
+    }
+    .floating-controls {
+        right: 10px;
+        bottom: 18px;
+        gap: 8px;
+    }
+    .fab-btn {
+        padding: 7px 10px;
+        font-size: 0.78rem;
+    }
+}
 </style>
 </head>
 <body>
-    <div id="header">
-        <h1>📍 営業の関係 - エリアマップ <a href="may_map.html" style="font-size: 14px; color: #ffeb3b; text-decoration: none; margin-left: 20px; border: 1px solid #ffeb3b; padding: 2px 8px; border-radius: 4px;">▶ 5月訪問のみ表示</a></h1>
-        <div class="legend" id="legend"></div>
-    </div>
+    <!-- Top Control Bar -->
+    <header id="header">
+        <div class="header-top">
+            <div class="brand">
+                <span class="brand-icon">🚖</span>
+                <div class="brand-text">
+                    <h1>あさタクシー 営業先マップ</h1>
+                    <span class="sub-text">2026年10月度 進捗管理連動版</span>
+                </div>
+            </div>
+            <div class="header-stats" id="headerStats">
+                <span class="stat-pill">全 <strong id="totalCount">0</strong> 件</span>
+                <span class="stat-pill visited">訪問済 <strong id="visitedCount">0</strong></span>
+                <span class="stat-pill unvisited">未接触 <strong id="unvisitedCount">0</strong></span>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="事業所名・病院名・住所・担当者で検索..." autocomplete="off">
+            <button id="clearSearch" class="clear-btn" style="display:none;" aria-label="検索クリア">✕</button>
+        </div>
+
+        <!-- Filter Chips (Scrollable on Mobile) -->
+        <div class="filter-bar">
+            <!-- Category Filters -->
+            <div class="filter-group">
+                <button class="chip active" data-filter="category" data-val="all">すべて</button>
+                <button class="chip cat-kyotaku" data-filter="category" data-val="居宅">居宅 <span class="badge" id="badgeKyotaku">0</span></button>
+                <button class="chip cat-shisetsu" data-filter="category" data-val="施設">施設 <span class="badge" id="badgeShisetsu">0</span></button>
+                <button class="chip cat-byoin" data-filter="category" data-val="病院">病院 <span class="badge" id="badgeByoin">0</span></button>
+                <button class="chip cat-shogai" data-filter="category" data-val="障害・包括">障害・包括 <span class="badge" id="badgeShogai">0</span></button>
+            </div>
+
+            <div class="divider-v"></div>
+
+            <!-- Status Filters -->
+            <div class="filter-group">
+                <button class="chip status-chip active" data-filter="status" data-val="all">ステータス全</button>
+                <button class="chip status-chip chip-visited" data-filter="status" data-val="訪問済">✔ 10月訪問済</button>
+                <button class="chip status-chip chip-unvisited" data-filter="status" data-val="未接触">⚠️ 未接触のみ</button>
+            </div>
+
+            <div class="divider-v"></div>
+
+            <!-- Distance Filters -->
+            <div class="filter-group">
+                <button class="chip dist-chip active" data-filter="distance" data-val="all">全距離</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="3">3km圏内</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="5">5km圏内</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="10">10km圏内</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Map Container -->
     <div id="map"></div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-controls">
+        <button id="btnGps" class="fab-btn" title="現在地を表示 (GPS)">
+            <span class="fab-icon">🎯</span>
+            <span class="fab-label">現在地</span>
+        </button>
+        <button id="btnOffice" class="fab-btn" title="安東営業所へ移動">
+            <span class="fab-icon">🏢</span>
+            <span class="fab-label">営業所</span>
+        </button>
+        <button id="btnToggleList" class="fab-btn fab-primary" title="一覧リストを表示/非表示">
+            <span class="fab-icon">📋</span>
+            <span class="fab-label">リスト (<span id="listCount">0</span>)</span>
+        </button>
+    </div>
+
+    <!-- Bottom List Drawer (Mobile Friendly) -->
+    <div id="listDrawer" class="list-drawer">
+        <div class="drawer-header" id="drawerHeader">
+            <div class="drawer-handle"></div>
+            <div class="drawer-title-row">
+                <h3 class="drawer-title">絞り込み一覧 (<span id="drawerCount">0</span>件)</h3>
+                <div class="drawer-actions">
+                    <select id="sortSelect" class="sort-select">
+                        <option value="distance_asc">距離が近い順</option>
+                        <option value="latest_desc">最新訪問日が新しい順</option>
+                        <option value="name_asc">名称順</option>
+                    </select>
+                    <button id="btnCloseDrawer" class="drawer-close-btn" aria-label="閉じる">✕</button>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-body" id="drawerList">
+            <!-- Dynamic Cards generated by app.js -->
+        </div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Map Data -->
     <script>
-const mapData = [
+window.mapData = [
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所ハピネス安東",
+    "corp": "株式会社Seiwa",
     "address": "広島県広島市安佐南区安東6-4-52-5",
     "phone": "082-832-8817",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "福長",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 1.6,
     "lat": 34.476795,
     "lng": 132.454361
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "くらしさケアプランセンターたかとり",
+    "corp": "株式会社幸房",
     "address": "広島県広島市安佐南区相田2-5-35",
     "phone": "082-878-1456",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "大江",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.0,
     "lat": 34.473267,
     "lng": 132.449814
   },
   {
     "category": "居宅",
-    "name": "ＩＧＬ居宅介護支援事業所ベルシャレー",
-    "address": "広島県広島市安佐南区上安6-31-1",
-    "phone": "082-830-3366",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.483097,
-    "lng": 132.444809
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "ＩＧＬ居宅介護支援事業所アルペンローゼ",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
     "address": "広島県広島市安佐南区上安6-27-12-12",
     "phone": "082-830-3377",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.3,
     "lat": 34.481506,
     "lng": 132.444427
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "ＩＧＬ居宅介護支援事業所ベルシャレー",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐南区上安6-31-1",
+    "phone": "082-830-3366",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 2.3,
+    "lat": 34.483097,
+    "lng": 132.444809
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ＩＧＬ居宅介護支援事業所ナーシングホームシャレー",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐南区上安6-31-1",
+    "phone": "082-830-3366",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-20",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 2.3,
+    "lat": 34.483097,
+    "lng": 132.444809
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "ケアステーションあやの実",
+    "corp": "ジョイ・フィールド株式会社",
     "address": "広島県広島市安佐南区上安3-16-13-Ⅰ-102",
     "phone": "082-225-8998",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "玉井",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.6,
     "lat": 34.479126,
     "lng": 132.4487
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "てるてるぼうずケアセンター",
+    "corp": "株式会社フォレストプラン",
     "address": "広島県広島市安佐南区緑井2-5-21　倉西コーポ201",
     "phone": "082-962-9258",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "山本",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 3.9,
     "lat": 34.467506,
     "lng": 132.473572
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "土谷居宅介護支援事業所大町",
+    "corp": "医療法人あかね会",
     "address": "広島県広島市安佐南区大町東2-7-24",
     "phone": "082-831-6653",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "住田",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 3.9,
     "lat": 34.462303,
     "lng": 132.469101
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所とまと",
+    "corp": "株式会社サルート",
     "address": "広島県広島市安佐南区高取南1-26-21",
     "phone": "082-847-0326",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "住廣",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 3.9,
     "lat": 34.471287,
     "lng": 132.437683
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "広島医療生協居宅介護支援事業所",
+    "corp": "広島医療生活協同組合",
     "address": "広島県広島市安佐南区中須2-19-6-3階",
     "phone": "082-879-1870",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "野地",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.5,
     "lat": 34.46088,
     "lng": 132.475143
   },
   {
     "category": "居宅",
-    "name": "居宅介護支援事業所ファミリー",
-    "address": "広島県広島市安佐北区あさひが丘1-1-8",
-    "phone": "082-838-4183",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.501011,
-    "lng": 132.442032
-  },
-  {
-    "category": "居宅",
-    "name": "サカ緑井病院居宅介護支援事業所",
-    "address": "広島県広島市安佐南区緑井6-35-17　サカ緑井介護センター内",
-    "phone": "082-879-0133",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.472427,
-    "lng": 132.481232
-  },
-  {
-    "category": "居宅",
-    "name": "信愛会居宅介護支援事業所",
-    "address": "広島県広島市安佐南区伴東5-8-24",
-    "phone": "082-209-8080",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "原",
-    "note": "",
-    "lat": 34.467758,
-    "lng": 132.424484
-  },
-  {
-    "category": "居宅",
-    "name": "ＩＧＬ居宅介護支援事業所ゆうゆう",
-    "address": "広島県広島市安佐北区安佐町後山12415-5",
-    "phone": "082-838-3339",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.509262,
-    "lng": 132.452698
-  },
-  {
-    "category": "居宅",
-    "name": "サンキ・ウエルビィ介護センター安佐南",
-    "address": "広島県広島市安佐南区中筋4-4-21-201",
-    "phone": "082-831-1070",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.45929,
-    "lng": 132.480225
-  },
-  {
-    "category": "居宅",
-    "name": "エコール在宅介護ステーション",
-    "address": "広島県広島市安佐南区大町東1-19-43",
-    "phone": "082-830-5155",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.453514,
-    "lng": 132.467056
-  },
-  {
-    "category": "居宅",
-    "name": "ふじ川内居宅介護支援事業所",
-    "address": "広島県広島市安佐南区川内1-5-24",
-    "phone": "082-870-3174",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "松岡",
-    "note": "",
-    "lat": 34.459286,
-    "lng": 132.48465
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "生協ひろしま居宅介護支援事業所・安佐南",
+    "corp": "生活協同組合ひろしま",
     "address": "広島県広島市安佐南区中須1-16-10　エルサンク濱岡1階",
     "phone": "082-830-0811",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.7,
     "lat": 34.456703,
     "lng": 132.471176
   },
   {
     "category": "居宅",
-    "name": "居宅介護支援事業所川内の里",
-    "address": "広島県広島市安佐南区川内1-21-29",
-    "phone": "082-831-1217",
+    "sub_category": "",
+    "name": "信愛会居宅介護支援事業所",
+    "corp": "医療法人信愛会",
+    "address": "広島県広島市安佐南区伴東5-8-24",
+    "phone": "082-209-8080",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "",
+    "original_status": "",
+    "contact_person": "原",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.456364,
-    "lng": 132.484589
+    "distance": 4.7,
+    "lat": 34.467758,
+    "lng": 132.424484
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "居宅介護支援事業所ファミリー",
+    "corp": "有限会社平野",
+    "address": "広島県広島市安佐北区あさひが丘1-1-8",
+    "phone": "082-838-4183",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.9,
+    "lat": 34.501011,
+    "lng": 132.442032
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ＩＧＬ居宅介護支援事業所ゆうゆう",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐北区安佐町後山12415-5",
+    "phone": "082-838-3339",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.9,
+    "lat": 34.509262,
+    "lng": 132.452698
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "エコール在宅介護ステーション",
+    "corp": "日本基準寝具株式会社",
+    "address": "広島県広島市安佐南区大町東1-19-43",
+    "phone": "082-830-5155",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.0,
+    "lat": 34.453514,
+    "lng": 132.467056
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "サカ緑井病院居宅介護支援事業所",
+    "corp": "医療法人サカもみの木会",
+    "address": "広島県広島市安佐南区緑井6-35-17　サカ緑井介護センター内",
+    "phone": "082-879-0133",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.1,
+    "lat": 34.472427,
+    "lng": 132.481232
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "サンキ・ウエルビィ介護センター安佐南",
+    "corp": "サンキ・ウエルビィ株式会社",
+    "address": "広島県広島市安佐南区中筋4-4-21-201",
+    "phone": "082-831-1070",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.1,
+    "lat": 34.45929,
+    "lng": 132.480225
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所古の市",
+    "corp": "株式会社ダイキ",
     "address": "広島県広島市安佐南区古市3-5-3",
     "phone": "082-876-3903",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "木村",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.3,
     "lat": 34.45153,
     "lng": 132.470032
   },
   {
     "category": "居宅",
-    "name": "オムエル祇園居宅介護支援事業所",
-    "address": "広島県広島市安佐南区祇園5-2-45-303",
-    "phone": "082-874-8150",
+    "sub_category": "",
+    "name": "居宅介護支援事業所川内の里",
+    "corp": "社会福祉法人楽友会",
+    "address": "広島県広島市安佐南区川内1-21-29",
+    "phone": "082-831-1217",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "小田",
-    "note": "",
-    "lat": 34.447208,
-    "lng": 132.46048
-  },
-  {
-    "category": "居宅",
-    "name": "トラパンダ居宅介護支援事業所",
-    "address": "広島県広島市安佐南区伴東7-41-12",
-    "phone": "082-849-4515",
-    "priority": "中",
-    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.46312,
-    "lng": 132.414139
+    "distance": 5.5,
+    "lat": 34.456364,
+    "lng": 132.484589
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "ふじ川内居宅介護支援事業所",
+    "corp": "株式会社不二ビルサービス",
+    "address": "広島県広島市安佐南区川内1-5-24",
+    "phone": "082-870-3174",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "松岡",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.6,
+    "lat": 34.459286,
+    "lng": 132.48465
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所みゆ",
+    "corp": "一般社団法人あすなろ",
     "address": "広島県広島市安佐南区東野3-23-6",
     "phone": "082-554-0701",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "道下・野崎",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.7,
     "lat": 34.452801,
     "lng": 132.484177
   },
   {
     "category": "居宅",
-    "name": "山下医院ほほえみ居宅介護支援事業所",
-    "address": "広島県広島市安佐北区口田1-15-10",
-    "phone": "082-843-1017",
+    "sub_category": "",
+    "name": "オムエル祇園居宅介護支援事業所",
+    "corp": "株式会社オムエル",
+    "address": "広島県広島市安佐南区祇園5-2-45-303",
+    "phone": "082-874-8150",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "増原",
+    "original_status": "",
+    "contact_person": "小田",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.461975,
-    "lng": 132.495178
+    "distance": 5.7,
+    "lat": 34.447208,
+    "lng": 132.46048
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "ゆうあい居宅介護支援事業所",
+    "corp": "社会福祉法人広島良城会",
     "address": "広島県広島市安佐南区伴東2-30-11",
     "phone": "082-848-2639",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "湯浅",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.8,
     "lat": 34.474861,
     "lng": 132.415955
   },
   {
     "category": "居宅",
-    "name": "たのしい家大原",
-    "address": "広島県広島市安佐南区伴東7丁目59-11",
-    "phone": "082-849-4421",
+    "sub_category": "",
+    "name": "トラパンダ居宅介護支援事業所",
+    "corp": "トラパンダ合同会社",
+    "address": "広島県広島市安佐南区伴東7-41-12",
+    "phone": "082-849-4515",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.462879,
-    "lng": 132.41217
+    "distance": 5.9,
+    "lat": 34.46312,
+    "lng": 132.414139
   },
   {
     "category": "居宅",
+    "sub_category": "",
     "name": "東原慈光園居宅介護支援事業所",
+    "corp": "社会福祉法人慈光会",
     "address": "広島県広島市安佐南区東原3-14-4",
     "phone": "082-850-1109",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.2,
     "lat": 34.447971,
     "lng": 132.480957
   },
   {
     "category": "居宅",
-    "name": "居宅介護支援事業所いろは",
-    "address": "広島県広島市安佐北区口田3-16-14",
-    "phone": "082-516-7876",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.468002,
-    "lng": 132.50174
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "たまゆら居宅介護支援事業所",
+    "corp": "医療法人地主クリニック",
     "address": "広島県広島市安佐南区祇園二丁目12-19",
     "phone": "082-871-0008",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.2,
     "lat": 34.444977,
     "lng": 132.468277
   },
   {
     "category": "居宅",
-    "name": "ぎおん牛田病院居宅介護支援事業所",
-    "address": "広島県広島市安佐南区西原8-28-14-103",
-    "phone": "082-836-6266",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.442402,
-    "lng": 132.470428
-  },
-  {
-    "category": "居宅",
-    "name": "広島ハートケアプランセンター",
-    "address": "広島県広島市安佐南区西原7-6-11",
-    "phone": "082-207-4770",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.442547,
-    "lng": 132.475922
-  },
-  {
-    "category": "居宅",
-    "name": "ケアプランセンターやすらぎ西原",
-    "address": "広島県広島市安佐南区西原8-33-3",
-    "phone": "082-962-0170",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.443123,
-    "lng": 132.474442
-  },
-  {
-    "category": "居宅",
-    "name": "安佐医師会居宅介護支援事業所",
-    "address": "広島県広島市安佐南区八木5-35-2",
-    "phone": "082-836-7588",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "松本",
-    "note": "",
-    "lat": 34.484173,
-    "lng": 132.503159
-  },
-  {
-    "category": "居宅",
-    "name": "生協ひろしま居宅介護支援事業所・安佐北",
-    "address": "広島県広島市安佐北区口田南8-1-3",
-    "phone": "082-841-2255",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.466335,
-    "lng": 132.506638
-  },
-  {
-    "category": "居宅",
-    "name": "ながお居宅介護支援事業所",
-    "address": "広島県広島市安佐南区西原4丁目10-12",
-    "phone": "082-871-8862",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.437923,
-    "lng": 132.467941
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "ケアプランよりしま",
+    "corp": "医療法人ユア・メディック",
     "address": "広島県広島市安佐南区祇園2-44-6",
     "phone": "082-962-1232",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.4,
     "lat": 34.440002,
     "lng": 132.464233
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "ぎおん牛田病院居宅介護支援事業所",
+    "corp": "医療法人社団聖愛会",
+    "address": "広島県広島市安佐南区西原8-28-14-103",
+    "phone": "082-836-6266",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.442402,
+    "lng": 132.470428
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "広島ハートケアプランセンター",
+    "corp": "医療法人広島ハートセンター",
+    "address": "広島県広島市安佐南区西原7-6-11",
+    "phone": "082-207-4770",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.442547,
+    "lng": 132.475922
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ケアプランセンターやすらぎ西原",
+    "corp": "株式会社ウェルケア",
+    "address": "広島県広島市安佐南区西原8-33-3",
+    "phone": "082-962-0170",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.443123,
+    "lng": 132.474442
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "山下医院ほほえみ居宅介護支援事業所",
+    "corp": "医療法人社団博寿会",
+    "address": "広島県広島市安佐北区口田1-15-10",
+    "phone": "082-843-1017",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "増原",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.461975,
+    "lng": 132.495178
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ケアマネオフィスそらいろ",
+    "corp": "合同会社オフィスＳｏｒａ彩",
+    "address": "広島県広島市安佐南区祇園3-16-1-101",
+    "phone": "082-962-4985",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "門田・松崎",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.6,
+    "lat": 34.440903,
+    "lng": 132.460388
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ながお居宅介護支援事業所",
+    "corp": "医療法人博善会",
+    "address": "広島県広島市安佐南区西原4丁目10-12",
+    "phone": "082-871-8862",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.0,
+    "lat": 34.437923,
+    "lng": 132.467941
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "居宅介護支援事業所いろは",
+    "corp": "株式会社たなか福祉サービス",
+    "address": "広島県広島市安佐北区口田3-16-14",
+    "phone": "082-516-7876",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.0,
+    "lat": 34.468002,
+    "lng": 132.50174
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "野村病院居宅介護支援事業所",
+    "corp": "医療法人メディカルパーク",
+    "address": "広島県広島市安佐南区祇園２丁目４２−１４",
+    "phone": "082-875-1111",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "吉本・松尾",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.1,
+    "lat": 34.438816,
+    "lng": 132.465454
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "生協ひろしま居宅介護支援事業所・安佐北",
+    "corp": "生活協同組合ひろしま",
+    "address": "広島県広島市安佐北区口田南8-1-3",
+    "phone": "082-841-2255",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.7,
+    "lat": 34.466335,
+    "lng": 132.506638
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "高陽・くにくさ居宅介護支援事業所",
+    "corp": "社会福祉法人あと会",
     "address": "広島県広島市安佐北区落合南1-11-16-101",
     "phone": "082-516-6005",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "西田",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.7,
     "lat": 34.467331,
     "lng": 132.506989
   },
   {
     "category": "居宅",
-    "name": "野村病院居宅介護支援事業所",
-    "address": "広島県広島市安佐南区祇園２丁目４２−１４",
-    "phone": "082-875-1111",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "吉本・松尾",
-    "note": "",
-    "lat": 34.438816,
-    "lng": 132.465454
-  },
-  {
-    "category": "居宅",
-    "name": "高陽第一診療所居宅介護支援事業所",
-    "address": "広島県広島市安佐北区落合1-14-13",
-    "phone": "082-845-1771",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.472378,
-    "lng": 132.510559
-  },
-  {
-    "category": "居宅",
-    "name": "ケアプランセンターみやび",
-    "address": "広島県広島市安佐北区落合2-13-11-102",
-    "phone": "090-4780-1773",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.481007,
-    "lng": 132.507507
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "土谷在宅事業部土谷居宅介護支援 事業所戸坂",
-    "address": "広島市東区戸坂千足２丁目７−１９ 戸坂総合ビル",
+    "corp": "医療法人あかね会",
+    "address": "広島県広島市東区戸坂千足２丁目７−１９ 戸坂総合ビル",
     "phone": "082-502-5215",
-    "priority": "",
-    "status": "",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-08-10",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 8.0,
     "lat": 34.43655,
     "lng": 132.485825
   },
   {
     "category": "居宅",
-    "name": "ケアマネオフィスそらいろ",
-    "address": "広島県広島市安佐南区祇園3-16-1-101",
-    "phone": "082-962-4985",
+    "sub_category": "",
+    "name": "安佐医師会居宅介護支援事業所",
+    "corp": "一般社団法人安佐医師会",
+    "address": "広島県広島市安佐南区八木5-35-2",
+    "phone": "082-836-7588",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "門田・松崎",
+    "original_status": "",
+    "contact_person": "松本",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.440903,
-    "lng": 132.460388
+    "distance": 8.1,
+    "lat": 34.484173,
+    "lng": 132.503159
   },
   {
     "category": "居宅",
-    "name": "にのみや内科居宅",
-    "address": "広島県広島市安佐北区可部５丁目９−３",
-    "phone": "082-819-1217",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.521099,
-    "lng": 132.508804
-  },
-  {
-    "category": "居宅",
-    "name": "菜の花居宅介護支援事業所",
-    "address": "広島県広島市安佐北区可部5丁目4番-19-3号",
-    "phone": "082-814-0008",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.521671,
-    "lng": 132.509216
-  },
-  {
-    "category": "居宅",
-    "name": "IGL居宅大塚西",
-    "address": "広島県広島市安佐南区大塚西",
-    "phone": "082-848-3395",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.447392,
-    "lng": 132.407227
-  },
-  {
-    "category": "居宅",
-    "name": "かめ住宅支援",
-    "address": "広島市安佐北区落合５丁目３０",
-    "phone": "082-576-3807",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.476658,
-    "lng": 132.523361
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所あかつき",
+    "corp": "株式会社ケアサポートあかつき",
     "address": "広島県広島市安佐南区伴北7-26-22",
     "phone": "080-7610-1084",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 8.2,
     "lat": 34.483128,
     "lng": 132.404739
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "高陽第一診療所居宅介護支援事業所",
+    "corp": "医療法人社団緑雨会",
+    "address": "広島県広島市安佐北区落合1-14-13",
+    "phone": "082-845-1771",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.4,
+    "lat": 34.472378,
+    "lng": 132.510559
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "ケアプランセンターみやび",
+    "corp": "リボーン株式会社",
+    "address": "広島県広島市安佐北区落合2-13-11-102",
+    "phone": "090-4780-1773",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-15",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.6,
+    "lat": 34.481007,
+    "lng": 132.507507
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "にのみや内科居宅",
+    "corp": "医療法人社団恵正会",
+    "address": "広島県広島市安佐北区可部５丁目９−３",
+    "phone": "082-819-1217",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-13",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.4,
+    "lat": 34.521099,
+    "lng": 132.508804
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "菜の花居宅介護支援事業所",
+    "corp": "医療法人秀仁会",
+    "address": "広島県広島市安佐北区可部5丁目4番-19-3号",
+    "phone": "082-814-0008",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.4,
+    "lat": 34.521671,
+    "lng": 132.509216
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "なごみの郷　居宅介護支援事業所",
+    "corp": "社会福祉法人正仁会",
+    "address": "広島県広島市安佐北区落合五丁目２５番８号",
+    "phone": "082-841-1334",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-09-10",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.5,
+    "lat": 34.476669,
+    "lng": 132.519577
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "IGL居宅大塚西",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐南区大塚西2-5-8",
+    "phone": "082-848-3395",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.6,
+    "lat": 34.447392,
+    "lng": 132.407227
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "かめ住宅支援",
+    "corp": "株式会社麒麟",
+    "address": "広島県広島市安佐北区落合5-30-11",
+    "phone": "082-576-3807",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-08",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.6,
+    "lat": 34.476658,
+    "lng": 132.523361
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "あい居宅介護支援事業所",
+    "corp": "アイ・ナーシング株式会社",
     "address": "広島県広島市安佐北区亀崎1-2-4",
     "phone": "082-824-7472",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "泉",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 10.0,
     "lat": 34.481461,
     "lng": 132.522369
   },
   {
     "category": "居宅",
-    "name": "エコール在宅介護ステーション安佐北",
-    "address": "広島県広島市安佐北区深川2丁目37−34−4",
-    "phone": "082-841-4540",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.494835,
-    "lng": 132.518036
-  },
-  {
-    "category": "居宅",
+    "sub_category": "",
     "name": "和楽荘居宅介護支援事業所",
+    "corp": "社会福祉法人和楽会",
     "address": "広島県広島市安佐南区伴西5丁目1432番地1",
     "phone": "082-848-5221",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-05-31",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 10.1,
     "lat": 34.461185,
     "lng": 132.374359
   },
   {
     "category": "居宅",
+    "sub_category": "",
+    "name": "居宅介護支援事業所和",
+    "corp": "社会福祉法人メインストリーム",
+    "address": "広島県広島市安佐南区山本新町4-3-11",
+    "phone": "082-850-1008",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-05",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.6,
+    "lat": 34.447517,
+    "lng": 132.436752
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
+    "name": "エコール在宅介護ステーション安佐北",
+    "corp": "日本基準寝具株式会社",
+    "address": "広島県広島市安佐北区深川2丁目37−34−4",
+    "phone": "082-841-4540",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 11.1,
+    "lat": 34.494835,
+    "lng": 132.518036
+  },
+  {
+    "category": "居宅",
+    "sub_category": "",
     "name": "居宅介護支援事業所飯室21",
+    "corp": "有限会社２１",
     "address": "広島県広島市安佐北区安佐町飯室1665-3",
     "phone": "082-810-2105",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 12.5,
     "lat": 34.556526,
     "lng": 132.44046
   },
   {
     "category": "居宅",
-    "name": "居宅介護支援事業所和",
-    "address": "広島県広島市安佐南区山本新町4-3-11",
-    "phone": "082-850-1008",
+    "sub_category": "",
+    "name": "ケアプランセンターnao",
+    "corp": "Ｆａｓｔ Ｃａｒｅ株式会社",
+    "address": "広島県広島市南区仁保一丁目13番13号-2",
+    "phone": "082-258-1451",
     "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "濵中直子",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.447517,
-    "lng": 132.436752
+    "distance": 16.6,
+    "lat": 34.372402,
+    "lng": 132.494965
   },
   {
     "category": "施設",
-    "name": "特別養護老人ホーム慈光園",
-    "address": "広島県広島市安佐南区高取北1-17-41",
-    "phone": "082-878-8005",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.477386,
-    "lng": 132.440872
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能ホームとまとやすにし",
-    "address": "広島県広島市安佐南区高取南1-26-21",
-    "phone": "082-555-2580",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "住廣",
-    "note": "",
-    "lat": 34.471287,
-    "lng": 132.437683
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能ホームおおまち",
-    "address": "広島県広島市安佐南区大町東2-11-4-2",
-    "phone": "082-554-0551",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.460346,
-    "lng": 132.468765
-  },
-  {
-    "category": "施設",
-    "name": "グループホームすこやか福井内科",
-    "address": "広島県広島市安佐南区長楽寺2-13-26",
-    "phone": "082-832-6116",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.469471,
-    "lng": 132.426987
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能センター緑井",
-    "address": "広島県広島市安佐南区緑井7-5-11",
-    "phone": "082-962-6541",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.472652,
-    "lng": 132.480911
-  },
-  {
-    "category": "施設",
-    "name": "特別養護老人ホームナーシングホームゆうゆう",
-    "address": "広島県広島市安佐北区安佐町後山12415-5",
-    "phone": "082-838-3333",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.509262,
-    "lng": 132.452698
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能型居宅介護事業所川内（すまいる川内）",
-    "address": "広島県広島市安佐南区川内5-1-49",
-    "phone": "082-846-6674",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.467476,
-    "lng": 132.488266
-  },
-  {
-    "category": "施設",
-    "name": "看護小規模多機能センター川内",
-    "address": "広島県広島市安佐南区川内5-1-9",
-    "phone": "082-831-4165",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.466797,
-    "lng": 132.489578
-  },
-  {
-    "category": "施設",
-    "name": "老人保健施設しんあい",
-    "address": "広島県広島市安佐南区伴東7-9-3",
-    "phone": "082-848-8888",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.46468,
-    "lng": 132.420868
-  },
-  {
-    "category": "施設",
-    "name": "老人保健施設しんあい",
-    "address": "広島県広島市安佐南区伴東7-9-3",
-    "phone": "082-848-8888",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.46468,
-    "lng": 132.420868
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能ホームなのか",
-    "address": "広島県広島市安佐南区古市3-4-5",
-    "phone": "082-831-1620",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.451778,
-    "lng": 132.469849
-  },
-  {
-    "category": "施設",
-    "name": "小規模多機能ホームとまとあきやぐち",
-    "address": "広島県広島市安佐北区口田1-16-38",
-    "phone": "082-516-6701",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "森川",
-    "note": "",
-    "lat": 34.463928,
-    "lng": 132.495438
-  },
-  {
-    "category": "施設",
-    "name": "たのしい家大原",
-    "address": "広島県広島市安佐南区伴東7丁目59-11",
-    "phone": "082-849-4421",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.462879,
-    "lng": 132.41217
-  },
-  {
-    "category": "施設",
-    "name": "広島中筋ケアセンターそよ風",
-    "address": "広島県広島市安佐南区中筋1-15-10",
-    "phone": "082-831-6671",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.448616,
-    "lng": 132.47438
-  },
-  {
-    "category": "施設",
-    "name": "ドエル・ファミーユ祇園",
-    "address": "広島県広島市安佐南区祇園2-5-18",
-    "phone": "082-832-2828",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "平野",
-    "note": "",
-    "lat": 34.446377,
-    "lng": 132.468124
-  },
-  {
-    "category": "施設",
-    "name": "介護付き有料老人ホームヴィーヴル祇園",
-    "address": "広島県広島市安佐南区祇園4-8-7",
-    "phone": "082-874-2227",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "岡野",
-    "note": "",
-    "lat": 34.440193,
-    "lng": 132.456009
-  },
-  {
-    "category": "施設",
-    "name": "あすなろインクルホーム",
-    "address": "広島市安佐北区口田南8丁目15-2",
-    "phone": "082-573-1360",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.464478,
-    "lng": 132.503754
-  },
-  {
-    "category": "施設",
-    "name": "西原セントラルクリニック　ショートステイふれあい西原",
-    "address": "広島県広島市安佐南区西原8-33-3",
-    "phone": "082-871-1115",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "西海",
-    "note": "",
-    "lat": 34.443123,
-    "lng": 132.474442
-  },
-  {
-    "category": "施設",
-    "name": "特別養護老人ホームくちた園",
-    "address": "広島県広島市安佐北区口田南1-9-8",
-    "phone": "082-516-4165",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.45446,
-    "lng": 132.490952
-  },
-  {
-    "category": "施設",
-    "name": "介護老人保健施設希望の園",
-    "address": "広島県広島市安佐南区八木5-16-2",
-    "phone": "082-873-5881",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "園木",
-    "note": "",
-    "lat": 34.483547,
-    "lng": 132.503052
-  },
-  {
-    "category": "施設",
-    "name": "グループホーム夕顔の家",
-    "address": "広島県広島市安佐南区八木8-9-23",
-    "phone": "082-832-0355",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.492149,
-    "lng": 132.506577
-  },
-  {
-    "category": "施設",
-    "name": "ショートステイゆず",
-    "address": "広島県広島市安佐北区落合1-17-12",
-    "phone": "082-847-6076",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "藤井",
-    "note": "",
-    "lat": 34.473984,
-    "lng": 132.51091
-  },
-  {
-    "category": "施設",
-    "name": "サンキ・ウエルビィ介護センターサ高住＆グループホーム山本",
-    "address": "広島県広島市安佐南区山本1-1",
-    "phone": "082-962-2675",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.435184,
-    "lng": 132.458862
-  },
-  {
-    "category": "施設",
-    "name": "みこころケアセンター",
-    "address": "広島県広島市安佐南区長束6丁目4番1号",
-    "phone": "082-874-3556",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.43478,
-    "lng": 132.457474
-  },
-  {
-    "category": "施設",
-    "name": "特養新都西風苑",
-    "address": "広島県広島市安佐南区大塚東３丁目３−９",
-    "phone": "082-811-8185",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.433628,
-    "lng": 132.41394
-  },
-  {
-    "category": "施設",
-    "name": "サービス付き高齢者向け住宅 若葉台",
-    "address": "広島県広島市安佐南区伴北７丁目３２−２７",
-    "phone": "082-849-0861",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.485088,
-    "lng": 132.402969
-  },
-  {
-    "category": "施設",
-    "name": "さんさん介護老人保健施設",
-    "address": "広島県広島市安佐北区亀崎4丁目7-1",
-    "phone": "082-845-1211",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "伊藤",
-    "note": "",
-    "lat": 34.482162,
-    "lng": 132.52536
-  },
-  {
-    "category": "施設",
-    "name": "特養亀山の里",
-    "address": "広島県広島市安佐北区亀山九丁目10番25号亀山の里",
-    "phone": "082-819-3355",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.53466,
-    "lng": 132.480209
-  },
-  {
-    "category": "施設",
-    "name": "特養ホームこころ三清荘",
-    "address": "広島県広島市佐伯区石内北1丁目1-11",
-    "phone": "082-962-9880",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.445377,
-    "lng": 132.376053
-  },
-  {
-    "category": "施設",
-    "name": "くらしさ春日野",
-    "address": "広島県広島市安佐南区山本新町5丁目44番1号",
-    "phone": "082-874-2266",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.443401,
-    "lng": 132.43222
-  },
-  {
-    "category": "施設",
-    "name": "サービス付き高齢者賃貸住宅慈愛の里",
-    "address": "広島市安佐北区安佐町飯室４５７９−１",
-    "phone": "082-835-3277",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.556526,
-    "lng": 132.44046
-  },
-  {
-    "category": "施設",
-    "name": "はぴね広島安佐",
-    "address": "広島県広島市安佐北区安佐町大字飯室字中布6486番地",
-    "phone": "082-810-3730",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.556526,
-    "lng": 132.44046
-  },
-  {
-    "category": "施設",
-    "name": "介護付き有料老人湯楽苑",
-    "address": "広島県広島市安佐北区安佐町大字飯室1563-3",
-    "phone": "082-835-3332",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.556526,
-    "lng": 132.44046
-  },
-  {
-    "category": "施設",
-    "name": "住宅型有料老人ホームハウスあい",
-    "address": "広島県広島市安佐北区安佐町飯室１４５０",
-    "phone": "082-835-3758",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.556526,
-    "lng": 132.44046
-  },
-  {
-    "category": "施設",
-    "name": "特別養護老人ホーム和",
-    "address": "広島県広島市安佐南区山本新町4-3-11",
-    "phone": "082-850-1008",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.447517,
-    "lng": 132.436752
-  },
-  {
-    "category": "施設",
-    "name": "とやま老健",
-    "address": "広島県広島市安佐南区沼田町大字吉山980−1",
-    "phone": "082-839-3939",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.462078,
-    "lng": 132.334396
-  },
-  {
-    "category": "施設",
-    "name": "特養みくに",
-    "address": "広島市安佐北区安佐町大字久地字日ノ浦3240番地65",
-    "phone": "082-837-0767",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.522072,
-    "lng": 132.384079
-  },
-  {
-    "category": "施設",
-    "name": "福寿荘",
-    "address": "広島県広島市安佐南区相田２丁目１５−１９ ",
+    "sub_category": "その他",
+    "name": "福寿草",
+    "corp": "有限会社 再輝堂",
+    "address": "広島県広島市安佐南区相田2-15-19",
     "phone": "082-832-7110",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-09-01",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.9,
     "lat": 34.471386,
     "lng": 132.452454
   },
   {
     "category": "施設",
-    "name": "ケアホーム ハピネス春日野",
-    "address": "広島県広島市安佐南区山本新町1-11-1",
+    "sub_category": "特養",
+    "name": "特別養護老人ホーム慈光園",
+    "corp": "社会福祉法人慈光会",
+    "address": "広島県広島市安佐南区高取北1-17-41",
+    "phone": "082-878-8005",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 3.2,
+    "lat": 34.477386,
+    "lng": 132.440872
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能ホームとまとやすにし",
+    "corp": "株式会社サルート",
+    "address": "広島県広島市安佐南区高取南1-26-21",
+    "phone": "082-555-2580",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "住廣",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-12",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 3.9,
+    "lat": 34.471287,
+    "lng": 132.437683
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能ホームおおまち",
+    "corp": "株式会社松広",
+    "address": "広島県広島市安佐南区大町東2-11-4-2",
+    "phone": "082-554-0551",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.1,
+    "lat": 34.460346,
+    "lng": 132.468765
+  },
+  {
+    "category": "施設",
+    "sub_category": "グループホーム",
+    "name": "グループホームすこやか福井内科",
+    "corp": "医療法人社団生仁会",
+    "address": "広島県広島市安佐南区長楽寺2-13-26",
+    "phone": "082-832-6116",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.3,
+    "lat": 34.469471,
+    "lng": 132.426987
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホームナーシングホームゆうゆう",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐北区安佐町後山12415-5",
+    "phone": "082-838-3333",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.9,
+    "lat": 34.509262,
+    "lng": 132.452698
+  },
+  {
+    "category": "施設",
+    "sub_category": "老健",
+    "name": "老人保健施設しんあい",
+    "corp": "医療法人信愛会",
+    "address": "広島県広島市安佐南区伴東7-9-3",
+    "phone": "082-848-8888",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.2,
+    "lat": 34.46468,
+    "lng": 132.420868
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能センター緑井",
+    "corp": "有限会社サカコーポレーション",
+    "address": "広島県広島市安佐南区緑井7-5-11",
+    "phone": "082-962-6541",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.3,
+    "lat": 34.472652,
+    "lng": 132.480911
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能ホームなのか",
+    "corp": "株式会社松広",
+    "address": "広島県広島市安佐南区古市3-4-5",
+    "phone": "082-831-1620",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.3,
+    "lat": 34.451778,
+    "lng": 132.469849
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能型居宅介護事業所川内（すまいる川内）",
+    "corp": "特定非営利活動法人地域の絆",
+    "address": "広島県広島市安佐南区川内5-1-49",
+    "phone": "082-846-6674",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.5,
+    "lat": 34.467476,
+    "lng": 132.488266
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "看護小規模多機能センター川内",
+    "corp": "有限会社サカコーポレーション",
+    "address": "広島県広島市安佐南区川内5-1-9",
+    "phone": "082-831-4165",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.5,
+    "lat": 34.466797,
+    "lng": 132.489578
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "ドエル・ファミーユ祇園",
+    "corp": "株式会社ドエル",
+    "address": "広島県広島市安佐南区祇園2-5-18",
+    "phone": "082-832-2828",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "平野",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.7,
+    "lat": 34.446377,
+    "lng": 132.468124
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "広島中筋ケアセンターそよ風",
+    "corp": "株式会社ＳＯＹＯＫＡＺＥ",
+    "address": "広島県広島市安佐南区中筋1-15-10",
+    "phone": "082-831-6671",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.2,
+    "lat": 34.448616,
+    "lng": 132.47438
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "たのしい家大原",
+    "corp": "株式会社ケア２１",
+    "address": "広島県広島市安佐南区伴東7丁目59-11",
+    "phone": "082-849-4421",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.2,
+    "lat": 34.462879,
+    "lng": 132.41217
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能ホームとまとあきやぐち",
+    "corp": "株式会社サルート",
+    "address": "広島県広島市安佐北区口田1-16-38",
+    "phone": "082-516-6701",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "森川",
+    "first_visit": "2026-08-27",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.3,
+    "lat": 34.463928,
+    "lng": 132.495438
+  },
+  {
+    "category": "施設",
+    "sub_category": "ショートステイ",
+    "name": "西原セントラルクリニック　ショートステイふれあい西原",
+    "corp": "医療法人好縁会",
+    "address": "広島県広島市安佐南区西原8-33-3",
+    "phone": "082-871-1115",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "西海",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.443123,
+    "lng": 132.474442
+  },
+  {
+    "category": "施設",
+    "sub_category": "有料老人ホーム",
+    "name": "介護付き有料老人ホームヴィーヴル祇園",
+    "corp": "株式会社ヴィーヴル",
+    "address": "広島県広島市安佐南区祇園4-8-7",
+    "phone": "082-874-2227",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "岡野",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.6,
+    "lat": 34.440193,
+    "lng": 132.456009
+  },
+  {
+    "category": "施設",
+    "sub_category": "小規模多機能",
+    "name": "小規模多機能センター口田",
+    "corp": "有限会社サカコーポレーション",
+    "address": "広島県広島市安佐北区口田南一丁目8番34-9号",
+    "phone": "082-209-4165",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.2,
+    "lat": 34.455387,
+    "lng": 132.491592
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "あすなろインクルホーム",
+    "corp": "社会福祉法人萌生会",
+    "address": "広島県広島市安佐北区口田南8丁目15-2",
+    "phone": "082-573-1360",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.3,
+    "lat": 34.464478,
+    "lng": 132.503754
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "みこころケアセンター",
+    "corp": "有限会社みこころ",
+    "address": "広島県広島市安佐南区長束6丁目4番1号",
+    "phone": "082-874-3556",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-12",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.5,
+    "lat": 34.43478,
+    "lng": 132.457474
+  },
+  {
+    "category": "施設",
+    "sub_category": "老健",
+    "name": "介護老人保健施設希望の園",
+    "corp": "医療法人社団恵愛会",
+    "address": "広島県広島市安佐南区八木5-16-2",
+    "phone": "082-873-5881",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "園木",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.6,
+    "lat": 34.483547,
+    "lng": 132.503052
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホームくちた園",
+    "corp": "社会福祉法人信々会",
+    "address": "広島県広島市安佐北区口田南1-9-8",
+    "phone": "082-516-4165",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-27",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.6,
+    "lat": 34.45446,
+    "lng": 132.490952
+  },
+  {
+    "category": "施設",
+    "sub_category": "グループホーム",
+    "name": "サンキ・ウエルビィ介護センターサ高住＆グループホーム山本",
+    "corp": "サンキ・ウエルビィ株式会社",
+    "address": "広島県広島市安佐南区山本4-11-24",
+    "phone": "082-962-2675",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.6,
+    "lat": 34.435184,
+    "lng": 132.458862
+  },
+  {
+    "category": "施設",
+    "sub_category": "グループホーム",
+    "name": "グループホームシェアーハッピネス",
+    "corp": "株式会社SOCサポート",
+    "address": "広島県広島市安佐南区伴中央2-8-10",
+    "phone": "082-962-7597",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.6,
+    "lat": 34.462971,
+    "lng": 132.402069
+  },
+  {
+    "category": "施設",
+    "sub_category": "グループホーム",
+    "name": "グループホーム夕顔の家",
+    "corp": "医療法人社団林医院",
+    "address": "広島県広島市安佐南区八木8-9-23",
+    "phone": "082-832-0355",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.4,
+    "lat": 34.492149,
+    "lng": 132.506577
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "サービス付き高齢者向け住宅 若葉台",
+    "corp": "社会福祉法人ぐくる",
+    "address": "広島県広島市安佐南区伴北７丁目３２−２７",
+    "phone": "082-849-0861",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.5,
+    "lat": 34.485088,
+    "lng": 132.402969
+  },
+  {
+    "category": "施設",
+    "sub_category": "ショートステイ",
+    "name": "ショートステイゆず",
+    "corp": "医療法人社団緑雨会",
+    "address": "広島県広島市安佐北区落合1-17-12",
+    "phone": "082-847-6076",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "藤井",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.8,
+    "lat": 34.473984,
+    "lng": 132.51091
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特養新都西風苑",
+    "corp": "社会福祉法人松風会",
+    "address": "広島県広島市安佐南区大塚東３丁目３−９",
+    "phone": "082-811-8185",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-10",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.1,
+    "lat": 34.433628,
+    "lng": 132.41394
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "ケアホームハピネス",
+    "corp": "株式会社Seiwa",
+    "address": "広島県広島市安佐南区山本新町1丁目11-1",
     "phone": "082-871-8817",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-05",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 9.1,
     "lat": 34.438889,
     "lng": 132.436768
   },
   {
-    "category": "病院",
-    "name": "妹尾病院",
-    "address": "広島県広島市安佐南区相田１－１０－２１",
-    "phone": "082-878-5111",
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホームへさか福寿",
+    "corp": "社会福祉法人かきつばた福祉会",
+    "address": "広島県広島市東区戸坂大上1丁目5-1-8",
+    "phone": "082-220-2110",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-05-05",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.471386,
-    "lng": 132.455353
+    "distance": 9.2,
+    "lat": 34.427509,
+    "lng": 132.489883
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特養みくに",
+    "corp": "社会福祉法人あさ",
+    "address": "広島県広島市安佐北区安佐町大字久地字日ノ浦3240番地65",
+    "phone": "082-837-0767",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.0,
+    "lat": 34.522072,
+    "lng": 132.384079
+  },
+  {
+    "category": "施設",
+    "sub_category": "老健",
+    "name": "さんさん介護老人保健施設",
+    "corp": "医療法人社団うすい会",
+    "address": "広島県広島市安佐北区亀崎4丁目7-1",
+    "phone": "082-845-1211",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "伊藤",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-21",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.2,
+    "lat": 34.482162,
+    "lng": 132.52536
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホーム春日野園",
+    "corp": "社会福祉法人 信々会",
+    "address": "広島県広島市安佐南区山本新町２丁目１８−９−１４",
+    "phone": "082-832-4165",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-05-05",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.2,
+    "lat": 34.441402,
+    "lng": 132.435608
+  },
+  {
+    "category": "施設",
+    "sub_category": "グループホーム",
+    "name": "菜の花グループホーム",
+    "corp": "医療法人秀仁会",
+    "address": "広島県広島市安佐北区可部８丁目１４−４",
+    "phone": "082-562-2877",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-09-02",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.4,
+    "lat": 34.527515,
+    "lng": 132.514679
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "くらしさ春日野",
+    "corp": "株式会社元気な介護",
+    "address": "広島県広島市安佐南区山本新町5丁目44番1号",
+    "phone": "082-874-2266",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.6,
+    "lat": 34.443401,
+    "lng": 132.43222
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホーム和",
+    "corp": "社会福祉法人メインストリーム",
+    "address": "広島県広島市安佐南区山本新町4-3-11",
+    "phone": "082-850-1008",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.6,
+    "lat": 34.447517,
+    "lng": 132.436752
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "広島原爆養護ホーム 倉掛のぞみ園",
+    "corp": "社会福祉法人 広島原爆被爆者援護事業団",
+    "address": "広島県広島市安佐北区倉掛３丁目５０−１",
+    "phone": "082-845-5025",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-05-05",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 11.0,
+    "lat": 34.473759,
+    "lng": 132.532028
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特養ホームこころ三清荘",
+    "corp": "社会福祉法人経山会",
+    "address": "広島県広島市佐伯区石内北1丁目1-11",
+    "phone": "082-962-9880",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-10",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 11.2,
+    "lat": 34.445377,
+    "lng": 132.376053
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特養亀山の里",
+    "corp": "社会福祉法人かつぎ会",
+    "address": "広島県広島市安佐北区亀山九丁目10番25号亀山の里",
+    "phone": "082-819-3355",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-10",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 11.3,
+    "lat": 34.53466,
+    "lng": 132.480209
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホーム　やすらぎの里",
+    "corp": "社会福祉法人平和会",
+    "address": "広島県広島市佐伯区五月が丘４丁目１５－６",
+    "phone": "082-941-2900",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.1,
+    "lat": 34.430958,
+    "lng": 132.403824
+  },
+  {
+    "category": "施設",
+    "sub_category": "有料老人ホーム",
+    "name": "介護付き有料老人湯楽苑",
+    "corp": "有限会社咲楽",
+    "address": "広島県広島市安佐北区安佐町大字飯室1563-3",
+    "phone": "082-835-3332",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.4,
+    "lat": 34.556526,
+    "lng": 132.44046
+  },
+  {
+    "category": "施設",
+    "sub_category": "有料老人ホーム",
+    "name": "住宅型有料老人ホームハウスあい",
+    "corp": "有限会社21",
+    "address": "広島県広島市安佐北区安佐町飯室１４５０",
+    "phone": "082-835-3758",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-10",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.7,
+    "lat": 34.556526,
+    "lng": 132.44046
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "はぴね広島安佐",
+    "corp": "グリーンライフ株式会社",
+    "address": "広島県広島市安佐北区安佐町大字飯室字中布6486番地",
+    "phone": "082-810-3730",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.8,
+    "lat": 34.556526,
+    "lng": 132.44046
+  },
+  {
+    "category": "施設",
+    "sub_category": "ショートステイ",
+    "name": "ショートステイ エデン亀山",
+    "corp": "株式会社エデン",
+    "address": "広島県広島市安佐北区亀山６丁目３８−２",
+    "phone": "082-815-0230",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-09-01",
+    "latest_visit": "2026-10-19",
+    "reaction": "◎好感触",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 13.6,
+    "lat": 34.533848,
+    "lng": 132.492462
+  },
+  {
+    "category": "施設",
+    "sub_category": "その他",
+    "name": "サービス付き高齢者賃貸住宅慈愛の里",
+    "corp": "有限会社21",
+    "address": "広島県広島市安佐北区安佐町飯室４５７９−１",
+    "phone": "082-835-3277",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-10",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 14.0,
+    "lat": 34.556526,
+    "lng": 132.44046
+  },
+  {
+    "category": "施設",
+    "sub_category": "特養",
+    "name": "特別養護老人ホーム谷和の里",
+    "corp": "社会福祉法人かつぎ会",
+    "address": "広島県広島市安佐北区可部町綾ケ谷２１７５",
+    "phone": "082-812-2111",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-09-01",
+    "latest_visit": "2026-10-16",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 14.7,
+    "lat": 34.556728,
+    "lng": 132.486664
+  },
+  {
+    "category": "施設",
+    "sub_category": "老健",
+    "name": "とやま老健",
+    "corp": "医療法人社団聖愛会",
+    "address": "広島県広島市安佐南区沼田町大字吉山980−1",
+    "phone": "082-839-3939",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 15.8,
+    "lat": 34.462078,
+    "lng": 132.334396
   },
   {
     "category": "病院",
-    "name": "医療法人　コムラ病院",
-    "address": "広島県広島市安佐南区相田一丁目１６番２９号",
-    "phone": "082-872-2151",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.469959,
-    "lng": 132.456955
-  },
-  {
-    "category": "病院",
+    "sub_category": "51",
     "name": "原田整形外科病院",
+    "corp": "医療法人昭和",
     "address": "広島県広島市安佐南区上安二丁目１５番２７号",
     "phone": "082-878-1125",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.5,
     "lat": 34.473213,
     "lng": 132.444489
   },
   {
     "category": "病院",
+    "sub_category": "",
     "name": "谷川脳神経外科",
+    "corp": "医療法人恵風会",
     "address": "広島県広島市安佐南区相田一丁目3番16号",
     "phone": "082-872-7733",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 2.8,
     "lat": 34.469982,
     "lng": 132.457062
   },
   {
     "category": "病院",
+    "sub_category": "20",
+    "name": "医療法人　コムラ病院",
+    "corp": "医療法人コムラ病院",
+    "address": "広島県広島市安佐南区相田一丁目１６番２９号",
+    "phone": "082-872-2151",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 2.9,
+    "lat": 34.469959,
+    "lng": 132.456955
+  },
+  {
+    "category": "病院",
+    "sub_category": "48",
+    "name": "妹尾病院",
+    "corp": "個人開設（妹尾 雅明）",
+    "address": "広島県広島市安佐南区相田１－１０－２１",
+    "phone": "082-878-5111",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "16時以降に訪問",
+    "distance": 3.0,
+    "lat": 34.471386,
+    "lng": 132.455353
+  },
+  {
+    "category": "病院",
+    "sub_category": "",
+    "name": "おかもとクリニック",
+    "corp": "医療法人おかもとクリニック",
+    "address": "広島県広島市安佐南区相田１丁目１０−１１ デイサービスひまわり",
+    "phone": "082-271-0405",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 3.0,
+    "lat": 34.470818,
+    "lng": 132.455994
+  },
+  {
+    "category": "病院",
+    "sub_category": "186",
     "name": "広島医療生活協同組合　広島共立病院",
+    "corp": "広島医療生活協同組合",
     "address": "広島県広島市安佐南区中須二丁目２０－２０",
     "phone": "082-879-1111",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.2,
     "lat": 34.460651,
     "lng": 132.474258
   },
   {
     "category": "病院",
+    "sub_category": "32",
     "name": "医療法人サカもみの木会　サカ緑井病院",
+    "corp": "医療法人サカもみの木会",
     "address": "広島県広島市安佐南区緑井６－２８－１",
     "phone": "082-879-0099",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "中山室長",
+    "first_visit": "",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.1,
     "lat": 34.472481,
     "lng": 132.481705
   },
   {
     "category": "病院",
-    "name": "医療法人みずの会　さんよう水野病院",
-    "address": "広島県広島市安佐南区川内４丁目１３号３３番",
-    "phone": "082-831-7878",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.46283,
-    "lng": 132.489349
-  },
-  {
-    "category": "病院",
+    "sub_category": "146",
     "name": "日比野病院",
+    "corp": "医療法人信愛会",
     "address": "広島県広島市安佐南区伴東七丁目９番２号",
     "phone": "082-848-2357",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.3,
     "lat": 34.464622,
     "lng": 132.420792
   },
   {
     "category": "病院",
+    "sub_category": "38",
     "name": "広島ハートセンター",
+    "corp": "社会医療法人広島ハートセンター",
     "address": "広島県広島市安佐南区西原五丁目５番１０号",
     "phone": "082-874-8080",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.9,
     "lat": 34.4464,
     "lng": 132.468826
   },
   {
     "category": "病院",
+    "sub_category": "",
     "name": "やまぐち整形外科",
-    "address": "広島県広島市安佐南区祇園二丁目13番20号:183号線バス停今津より徒歩10分",
+    "corp": "社会医療法人広島ハートセンター",
+    "address": "広島県広島市安佐南区祇園二丁目13番20号",
     "phone": "082-874-6688",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.9,
     "lat": 34.444565,
     "lng": 132.467087
   },
   {
     "category": "病院",
+    "sub_category": "100",
+    "name": "医療法人みずの会　さんよう水野病院",
+    "corp": "医療法人みずの会",
+    "address": "広島県広島市安佐南区川内４丁目１３号３３番",
+    "phone": "082-831-7878",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.2,
+    "lat": 34.46283,
+    "lng": 132.489349
+  },
+  {
+    "category": "病院",
+    "sub_category": "90",
     "name": "医療法人社団　聖愛会　ぎおん牛田病院",
+    "corp": "医療法人社団聖愛会",
     "address": "広島県広島市安佐南区西原八丁目２９番２４号",
     "phone": "082-850-3116",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.6,
     "lat": 34.442856,
     "lng": 132.470718
   },
   {
     "category": "病院",
-    "name": "医療法人社団恵愛会　安佐病院",
-    "address": "広島県広島市安佐南区八木５－１５－１",
-    "phone": "082-873-2022",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.483894,
-    "lng": 132.501907
-  },
-  {
-    "category": "病院",
-    "name": "地方独立行政法人広島市立病院機構　広島市立北部医療センター安佐市民病院",
-    "address": "広島県広島市安佐北区亀山南１－２－１",
-    "phone": "082-815-5211",
-    "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.516769,
-    "lng": 132.497162
-  },
-  {
-    "category": "病院",
+    "sub_category": "106",
     "name": "野村病院",
+    "corp": "医療法人メディカルパーク",
     "address": "広島県広島市安佐南区祇園２－４２－１４",
     "phone": "082-832-2255",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.1,
     "lat": 34.438816,
     "lng": 132.465454
   },
   {
     "category": "病院",
+    "sub_category": "376",
+    "name": "医療法人社団恵愛会　安佐病院",
+    "corp": "医療法人社団恵愛会",
+    "address": "広島県広島市安佐南区八木５－１５－１",
+    "phone": "082-873-2022",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.5,
+    "lat": 34.483894,
+    "lng": 132.501907
+  },
+  {
+    "category": "病院",
+    "sub_category": "434",
+    "name": "地方独立行政法人広島市立病院機構　広島市立北部医療センター安佐市民病院",
+    "corp": "地方独立行政法人広島市立病院機構",
+    "address": "広島県広島市安佐北区亀山南１－２－１",
+    "phone": "082-815-5211",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.7,
+    "lat": 34.516769,
+    "lng": 132.497162
+  },
+  {
+    "category": "病院",
+    "sub_category": "214",
     "name": "太田川病院",
+    "corp": "医療法人社団輔仁会",
     "address": "広島県広島市東区戸坂千足１―２１―２５",
     "phone": "082-220-0221",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.9,
     "lat": 34.437153,
     "lng": 132.481003
   },
   {
     "category": "病院",
+    "sub_category": "55",
     "name": "医療法人社団加藤会　高陽中央病院",
+    "corp": "医療法人社団加藤会",
     "address": "広島県広島市安佐北区落合５－１－１０",
     "phone": "082-842-0002",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 8.8,
     "lat": 34.480183,
     "lng": 132.51326
   },
   {
     "category": "病院",
+    "sub_category": "379",
     "name": "医療法人社団仁和会　児玉病院",
+    "corp": "医療法人社団仁和会",
     "address": "広島県広島市安佐北区可部７－１４－３９",
     "phone": "082-814-3151",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 9.6,
     "lat": 34.524567,
     "lng": 132.509186
   },
   {
     "category": "病院",
-    "name": "医療法人　長久堂野村病院",
-    "address": "広島県広島市安佐北区可部南４丁目１７番３０号",
-    "phone": "082-815-2882",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.504768,
-    "lng": 132.512772
-  },
-  {
-    "category": "病院",
-    "name": "高陽ニュータウン病院",
-    "address": "広島県広島市安佐北区亀崎４－７－１",
-    "phone": "082-843-1211",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "政本・石田",
-    "note": "",
-    "lat": 34.482162,
-    "lng": 132.52536
-  },
-  {
-    "category": "病院",
-    "name": "安佐医師会病院",
-    "address": "広島県広島市安佐北区可部南２丁目１－３８",
-    "phone": "082-555-2700",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.505917,
-    "lng": 132.51564
-  },
-  {
-    "category": "病院",
+    "sub_category": "200",
     "name": "広島第一病院",
+    "corp": "医療法人社団和風会",
     "address": "広島県広島市東区戸坂南２－９－１５",
     "phone": "082-229-0211",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 9.8,
     "lat": 34.423344,
     "lng": 132.494064
   },
   {
     "category": "病院",
+    "sub_category": "199",
     "name": "メリィホスピタル",
+    "corp": "医療法人社団八千代会",
     "address": "広島県広島市安佐南区大塚西三丁目１－２０",
     "phone": "082-849-2300",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 9.8,
     "lat": 34.446133,
     "lng": 132.391556
   },
   {
     "category": "病院",
+    "sub_category": "102",
+    "name": "安佐医師会病院",
+    "corp": "一般社団法人安佐医師会",
+    "address": "広島県広島市安佐北区可部南２丁目１－３８",
+    "phone": "082-555-2700",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-02",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.1,
+    "lat": 34.505917,
+    "lng": 132.51564
+  },
+  {
+    "category": "病院",
+    "sub_category": "50",
     "name": "医療法人社団慈恵会　いまだ病院",
+    "corp": "医療法人社団慈恵会",
     "address": "広島県広島市西区三篠町一丁目５番１号",
     "phone": "082-238-6111",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 10.1,
     "lat": 34.41185,
     "lng": 132.453217
   },
   {
     "category": "病院",
-    "name": "医療法人社団　生和会　広島はくしま病院",
-    "address": "広島県広島市中区東白島町１９－１６",
-    "phone": "082-224-5355",
+    "sub_category": "140",
+    "name": "高陽ニュータウン病院",
+    "corp": "医療法人社団うすい会",
+    "address": "広島県広島市安佐北区亀崎４－７－１",
+    "phone": "082-843-1211",
     "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "政本・石田",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.403069,
-    "lng": 132.465317
+    "distance": 10.2,
+    "lat": 34.482162,
+    "lng": 132.52536
   },
   {
     "category": "病院",
-    "name": "地方独立行政法人広島市立病院機構　広島市立広島市民病院",
-    "address": "広島県広島市中区基町７－３３",
-    "phone": "082-221-2291",
+    "sub_category": "79",
+    "name": "医療法人　長久堂野村病院",
+    "corp": "医療法人長久堂野村病院",
+    "address": "広島県広島市安佐北区可部南４丁目１７番３０号",
+    "phone": "082-815-2882",
     "priority": "中",
-    "status": "未接触",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-02",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.397812,
-    "lng": 132.458832
+    "distance": 11.0,
+    "lat": 34.504768,
+    "lng": 132.512772
   },
   {
     "category": "病院",
+    "sub_category": "130",
     "name": "医療法人厚生堂　長崎病院",
+    "corp": "医療法人厚生堂",
     "address": "広島県広島市西区横川新町３－１１",
     "phone": "082-208-5801",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 11.0,
     "lat": 34.408875,
     "lng": 132.447174
   },
   {
     "category": "病院",
+    "sub_category": "28",
     "name": "医療法人社団公仁会　槇殿順記念病院",
+    "corp": "医療法人社団公仁会",
     "address": "広島県広島市西区横川新町８－２１",
     "phone": "082-296-0110",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 11.0,
     "lat": 34.408241,
     "lng": 132.446991
   },
   {
     "category": "病院",
-    "name": "医療法人社団共愛会　己斐ケ丘病院",
-    "address": "広島県広島市西区己斐上６－５５４－１",
-    "phone": "082-272-2126",
+    "sub_category": "110",
+    "name": "医療法人社団　生和会　広島はくしま病院",
+    "corp": "医療法人社団生和会",
+    "address": "広島県広島市中区東白島町１９－１６",
+    "phone": "082-224-5355",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.428448,
-    "lng": 132.424042
+    "distance": 11.6,
+    "lat": 34.403069,
+    "lng": 132.465317
   },
   {
     "category": "病院",
-    "name": "医療法人　土本病院",
-    "address": "広島県広島市中区橋本町４－７",
-    "phone": "082-228-3390",
-    "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.395115,
-    "lng": 132.469162
-  },
-  {
-    "category": "病院",
+    "sub_category": "269",
     "name": "ＪＲ広島病院",
+    "corp": "医療法人JR広島病院",
     "address": "広島県広島市東区二葉の里３－１－３６",
     "phone": "082-262-1171",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 12.0,
     "lat": 34.401321,
     "lng": 132.477203
   },
   {
     "category": "病院",
-    "name": "槙坪病院",
-    "address": "広島県広島市東区光町１－１４－２",
-    "phone": "082-263-5788",
+    "sub_category": "743",
+    "name": "地方独立行政法人広島市立病院機構　広島市立広島市民病院",
+    "corp": "地方独立行政法人広島市立病院機構",
+    "address": "広島県広島市中区基町７－３３",
+    "phone": "082-221-2291",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.398865,
-    "lng": 132.48027
+    "distance": 12.1,
+    "lat": 34.397812,
+    "lng": 132.458832
   },
   {
     "category": "病院",
+    "sub_category": "200",
     "name": "国家公務員共済組合連合会　広島記念病院",
+    "corp": "国家公務員共済組合連合会",
     "address": "広島県広島市中区本川町１－４－３",
     "phone": "082-292-1271",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 12.4,
     "lat": 34.395599,
     "lng": 132.44986
   },
   {
     "category": "病院",
+    "sub_category": "221",
+    "name": "医療法人社団共愛会　己斐ケ丘病院",
+    "corp": "医療法人社団共愛会",
+    "address": "広島県広島市西区己斐上６－５５４－１",
+    "phone": "082-272-2126",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.5,
+    "lat": 34.428448,
+    "lng": 132.424042
+  },
+  {
+    "category": "病院",
+    "sub_category": "215",
+    "name": "槙坪病院",
+    "corp": "個人開設（槙坪 毅）",
+    "address": "広島県広島市東区光町１－１４－２",
+    "phone": "082-263-5788",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 12.5,
+    "lat": 34.398865,
+    "lng": 132.48027
+  },
+  {
+    "category": "病院",
+    "sub_category": "34",
     "name": "医療法人社団　正岡病院",
+    "corp": "医療法人社団正岡病院",
     "address": "広島県広島市中区猫屋町４番６号",
     "phone": "082-291-3366",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 12.5,
     "lat": 34.394981,
     "lng": 132.448441
   },
   {
     "category": "病院",
-    "name": "岡本クリニック",
-    "address": "広島県広島市西区己斐本町3丁目11番7号",
-    "phone": "082-271-0405",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.39455,
-    "lng": 132.425873
-  },
-  {
-    "category": "病院",
+    "sub_category": "88",
     "name": "医療法人社団光仁会梶川病院",
+    "corp": "医療法人社団光仁会",
     "address": "広島県広島市西区天満町８番７号",
     "phone": "082-231-1131",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 12.6,
     "lat": 34.396191,
     "lng": 132.440521
   },
   {
     "category": "病院",
+    "sub_category": "70",
+    "name": "医療法人　土本病院",
+    "corp": "医療法人土本病院",
+    "address": "広島県広島市中区橋本町４－７",
+    "phone": "082-228-3390",
+    "priority": "中",
+    "status": "未接触",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 13.0,
+    "lat": 34.395115,
+    "lng": 132.469162
+  },
+  {
+    "category": "病院",
+    "sub_category": "148",
     "name": "医療法人たかまさ会　山崎病院",
+    "corp": "医療法人たかまさ会",
     "address": "広島県広島市東区上温品１－２４－９",
     "phone": "082-280-1234",
     "priority": "中",
     "status": "未接触",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 13.6,
     "lat": 34.421684,
     "lng": 132.512634
   },
   {
     "category": "障害・包括",
-    "name": "広島市高取北・安西地域包括支援センター（外部リンク）",
-    "address": "安佐南区高取北1-17-41",
+    "sub_category": "その他",
+    "name": "サ高住メリィハウス相田",
+    "corp": "富士メディカル株式会社",
+    "address": "広島県広島市安佐南区相田2-6-9",
+    "phone": "082-832-8770",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 2.0,
+    "lat": 34.472813,
+    "lng": 132.450439
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市高取北・安西地域包括支援センター",
+    "corp": "社会福祉法人慈光会",
+    "address": "広島県広島市安佐南区高取北1-17-41",
     "phone": "082-878-9401",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-10",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 3.2,
     "lat": 34.477386,
     "lng": 132.440872
   },
   {
     "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "愛の家グループホーム広島大町",
+    "corp": "メディカル・ケア・サービス関西株式会社",
     "address": "広島県広島市安佐南区大町東3丁目1-18 ハートランド大町1階",
     "phone": "082-831-8885",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 3.6,
     "lat": 34.464321,
     "lng": 132.468567
   },
   {
     "category": "障害・包括",
-    "name": "広島市安佐・安佐南地域包括支援センター（外部リンク）",
-    "address": "安佐南区中須2-19-6　3階",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市安佐・安佐南地域包括支援センター",
+    "corp": "広島医療生活協同組合",
+    "address": "広島県広島市安佐南区中須2-19-6　3階",
     "phone": "082-879-1876",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.5,
     "lat": 34.46088,
     "lng": 132.475143
   },
   {
     "category": "障害・包括",
-    "name": "広島市城山北・城南地域包括支援センター（外部リンク）",
-    "address": "安佐南区緑井6-37-5-102",
-    "phone": "082-831-1157",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "前川",
-    "note": "",
-    "lat": 34.471649,
-    "lng": 132.481339
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "その他",
     "name": "ライフパートナー伴東",
+    "corp": "株式会社エメラルドの郷",
     "address": "広島県広島市安佐南区伴東1-4-8",
     "phone": "082-848-8600",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.5,
     "lat": 34.469276,
     "lng": 132.42572
   },
   {
     "category": "障害・包括",
+    "sub_category": "相談支援",
     "name": "障害者相談支援事業所リガーレ",
-    "address": "安佐南区大町東一丁目１２番１０号",
+    "corp": "社会福祉法人三矢会",
+    "address": "広島県広島市安佐南区大町東一丁目１２番１０号",
     "phone": "082-831-7733",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "黒杭",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 4.7,
     "lat": 34.454376,
     "lng": 132.468002
   },
   {
     "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームのんびり",
+    "corp": "株式会社DAYS",
+    "address": "広島県広島市安佐南区伴東1丁目6-12-10",
+    "phone": "082-962-3907",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 4.7,
+    "lat": 34.468651,
+    "lng": 132.424606
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市城山北・城南地域包括支援センター",
+    "corp": "社会福祉法人楽友会",
+    "address": "広島県広島市安佐南区緑井6-37-5-102",
+    "phone": "082-831-1157",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "前川",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.0,
+    "lat": 34.471649,
+    "lng": 132.481339
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
     "name": "ハピネス川内",
+    "corp": "株式会社Seiwa",
     "address": "広島県広島市安佐南区川内5-18-25",
     "phone": "082-831-8817",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-05-15",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.3,
     "lat": 34.468288,
     "lng": 132.485809
   },
   {
     "category": "障害・包括",
+    "sub_category": "その他",
     "name": "ショートステイ輝きみどりいの家",
+    "corp": "シューペルブリアン株式会社",
     "address": "広島県広島市安佐南区緑井6丁目5-16",
     "phone": "082-831-3800",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.6,
     "lat": 34.474327,
     "lng": 132.486237
   },
   {
     "category": "障害・包括",
-    "name": "広島市清和・日浦地域包括支援センター（外部リンク）",
-    "address": "安佐北区あさひが丘3-18-13-7-101",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市清和・日浦地域包括支援センター",
+    "corp": "社会福祉法人ＩＧＬ学園福祉会",
+    "address": "広島県広島市安佐北区あさひが丘3-18-13-7-101",
     "phone": "082-810-4688",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "清本・山根・吉屋・",
+    "original_status": "",
+    "contact_person": "清本・山根・吉屋",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.8,
     "lat": 34.506344,
     "lng": 132.437027
   },
   {
     "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームたのしい家",
+    "corp": "株式会社ケア２１",
+    "address": "広島県広島市安佐南区祇園6丁目12-31",
+    "phone": "082-850-2221",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 5.8,
+    "lat": 34.446434,
+    "lng": 132.463593
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "グループホーム　ボヌール川内",
-    "address": "安佐南区川内三丁目５番４０号",
+    "corp": "有限会社榮成興産",
+    "address": "広島県広島市安佐南区川内三丁目５番４０号",
     "phone": "082-877-7667",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-22",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.9,
     "lat": 34.461899,
     "lng": 132.48764
   },
   {
     "category": "障害・包括",
-    "name": "サ高住メリィハウス八木",
-    "address": "広島県広島市安佐南区八木1丁目19−1",
-    "phone": "082-830-2006",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.476879,
-    "lng": 132.492279
-  },
-  {
-    "category": "障害・包括",
-    "name": "愛の家グループホーム広島八木",
-    "address": "広島県広島市安佐南区八木1丁目10-10",
-    "phone": "082-830-2588",
-    "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.477165,
-    "lng": 132.493805
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "グループホームふれあい東野",
+    "corp": "医療法人好縁会",
     "address": "広島県広島市安佐南区東野3丁目30-21",
     "phone": "082-876-3122",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.9,
     "lat": 34.451332,
     "lng": 132.484299
   },
   {
     "category": "障害・包括",
-    "name": "広島市口田地域包括支援センター（外部リンク）",
-    "address": "安佐北区口田南7-11-22",
-    "phone": "082-842-8818",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.461643,
-    "lng": 132.497559
-  },
-  {
-    "category": "障害・包括",
-    "name": "広島市祇園・長束地域包括支援センター（外部リンク）",
-    "address": "安佐南区東原3-14-4",
-    "phone": "082-875-0511",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "渡邊・下造座",
-    "note": "",
-    "lat": 34.447971,
-    "lng": 132.480957
-  },
-  {
-    "category": "障害・包括",
-    "name": "広島市東原・祇園東地域包括支援センター（外部リンク）",
-    "address": "安佐南区東原3-14-4",
-    "phone": "082-850-2220",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "阿部",
-    "note": "",
-    "lat": 34.447971,
-    "lng": 132.480957
-  },
-  {
-    "category": "障害・包括",
-    "name": "Sグラン安佐南",
-    "address": "広島県広島市安佐南区東野二丁目18番6号",
-    "phone": "082-831-1177",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.44857,
-    "lng": 132.486969
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "グループホームりらっくす祇園",
-    "address": "安佐南区祇園二丁目１３番１７号",
+    "corp": "有限会社リラックス",
+    "address": "広島県広島市安佐南区祇園二丁目１３番１７号",
     "phone": "082-555-9980",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-01",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 5.9,
     "lat": 34.44434,
     "lng": 132.467224
   },
   {
     "category": "障害・包括",
-    "name": "グループホーム安佐物語",
-    "address": "広島県広島市安佐北区亀山南1丁目12-12",
-    "phone": "082-847-5757",
-    "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.515808,
-    "lng": 132.494415
-  },
-  {
-    "category": "障害・包括",
-    "name": "シニアホームいずみ",
-    "address": "広島県広島市安佐北区口田3丁目29-6",
-    "phone": "082-516-5963",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.465103,
-    "lng": 132.502945
-  },
-  {
-    "category": "障害・包括",
-    "name": "あすなろインクルホーム",
-    "address": "広島県広島市安佐北区口田南8丁目15－2「あすなろインクルホーム」",
-    "phone": "082-573-1360",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.464478,
-    "lng": 132.503754
-  },
-  {
-    "category": "障害・包括",
-    "name": "グループホームはるかぜ",
-    "address": "広島県広島市安佐北区亀山南2丁目8-20",
-    "phone": "082-819-1107",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市祇園・長束地域包括支援センター",
+    "corp": "社会福祉法人広島良城会",
+    "address": "広島県広島市安佐南区東原3-14-4",
+    "phone": "082-875-0511",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "",
+    "original_status": "",
+    "contact_person": "渡邊・下造座",
+    "first_visit": "2026-04-21",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.51767,
-    "lng": 132.495041
+    "distance": 6.2,
+    "lat": 34.447971,
+    "lng": 132.480957
   },
   {
     "category": "障害・包括",
-    "name": "小規模多機能型施設縁が和",
-    "address": "広島県広島市安佐北区亀山南2丁目3-27",
-    "phone": "082-819-1750",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市東原・祇園東地域包括支援センター",
+    "corp": "社会福祉法人慈光会",
+    "address": "広島県広島市安佐南区東原3-14-4",
+    "phone": "082-850-2220",
     "priority": "中",
     "status": "訪問済",
-    "contact_person": "",
+    "original_status": "",
+    "contact_person": "阿部",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.517498,
-    "lng": 132.496658
+    "distance": 6.2,
+    "lat": 34.447971,
+    "lng": 132.480957
   },
   {
     "category": "障害・包括",
-    "name": "ケアホームほのぼの苑西原",
-    "address": "広島県広島市安佐南区西原6丁目14−10",
-    "phone": "082-850-1201",
+    "sub_category": "その他",
+    "name": "Sグラン安佐南",
+    "corp": "株式会社L.S.I.",
+    "address": "広島県広島市安佐南区東野二丁目18番6号",
+    "phone": "082-831-1177",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.440392,
-    "lng": 132.471634
+    "distance": 6.3,
+    "lat": 34.44857,
+    "lng": 132.486969
   },
   {
     "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "愛の家グループホーム広島八木",
+    "corp": "メディカル・ケア・サービス関西株式会社",
+    "address": "広島県広島市安佐南区八木1丁目10-10",
+    "phone": "082-830-2588",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.4,
+    "lat": 34.477165,
+    "lng": 132.493805
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "サ高住メリィハウス八木",
+    "corp": "富士メディカル株式会社",
+    "address": "広島県広島市安佐南区八木1丁目19−1",
+    "phone": "082-830-2006",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.5,
+    "lat": 34.476879,
+    "lng": 132.492279
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "地域包括支援センター",
+    "name": "広島市口田地域包括支援センター",
+    "corp": "医療法人社団うすい会",
+    "address": "広島県広島市安佐北区口田南7-11-22",
+    "phone": "082-842-8818",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-04-20",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 6.6,
+    "lat": 34.461643,
+    "lng": 132.497559
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
     "name": "太田川学園第１成人部短期入所",
-    "address": "安佐南区伴東三丁目１６番１号",
+    "corp": "社会福祉法人三矢会",
+    "address": "広島県広島市安佐南区伴東三丁目１６番１号",
     "phone": "082-848-0130",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-14",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.6,
     "lat": 34.476772,
     "lng": 132.411163
   },
   {
     "category": "障害・包括",
-    "name": "ニチイケアセンター広島東原",
-    "address": "広島県広島市安佐南区東原二丁目8-12",
-    "phone": "082-832-3025",
+    "sub_category": "その他",
+    "name": "ケアホームほのぼの苑西原",
+    "corp": "株式会社冨山学園",
+    "address": "広島県広島市安佐南区西原6丁目14−10",
+    "phone": "082-850-1201",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.443161,
-    "lng": 132.481384
+    "distance": 6.8,
+    "lat": 34.440392,
+    "lng": 132.471634
   },
   {
     "category": "障害・包括",
-    "name": "ニチイケアセンター可部",
-    "address": "広島市安佐北区-介護サービス/施設-〒7...",
-    "phone": "082-819-3531",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.518333,
-    "lng": 132.507782
-  },
-  {
-    "category": "障害・包括",
-    "name": "ケアホームディア・レスト可部",
-    "address": "広島県広島市安佐北区亀山1丁目17-16",
-    "phone": "082-819-3800",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.516022,
-    "lng": 132.501404
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "地域包括支援センター",
     "name": "大塚地域包括支援センター",
-    "address": "広島県広島市安佐南区大塚1-1",
+    "corp": "社会福祉法人和楽会",
+    "address": "広島県広島市安佐南区伴中央2-5-12",
     "phone": "082-849-5860",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-13",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 6.8,
     "lat": 34.447392,
     "lng": 132.407227
   },
   {
     "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ニチイケアセンター広島東原",
+    "corp": "株式会社ニチイ学館",
+    "address": "広島県広島市安佐南区東原二丁目8-12",
+    "phone": "082-832-3025",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.1,
+    "lat": 34.443161,
+    "lng": 132.481384
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホーム安佐物語",
+    "corp": "有限会社ＭＹ・ＤＯ",
+    "address": "広島県広島市安佐北区亀山南1丁目12-12",
+    "phone": "082-847-5757",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.2,
+    "lat": 34.515808,
+    "lng": 132.494415
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "シニアホームいずみ",
+    "corp": "社会福祉法人フェニックス",
+    "address": "広島県広島市安佐北区口田3丁目29-6",
+    "phone": "082-516-5963",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 7.3,
+    "lat": 34.465103,
+    "lng": 132.502945
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "愛の家グループホーム広島東原",
+    "corp": "メディカル・ケア・サービス関西株式会社",
     "address": "広島県広島市安佐南区東原2丁目9-4",
     "phone": "082-850-0802",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.4,
     "lat": 34.443821,
     "lng": 132.483658
   },
   {
     "category": "障害・包括",
-    "name": "相談支援センタースクラム",
-    "address": "安佐北区落合1丁目13-18",
-    "phone": "082-845-3277",
+    "sub_category": "グループホーム",
+    "name": "グループホームはるかぜ",
+    "corp": "有限会社かざぐるま",
+    "address": "広島県広島市安佐北区亀山南2丁目8-20",
+    "phone": "082-819-1107",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.471027,
-    "lng": 132.510483
+    "distance": 7.4,
+    "lat": 34.51767,
+    "lng": 132.495041
   },
   {
     "category": "障害・包括",
-    "name": "グループホームなごみの郷亀山",
-    "address": "広島県広島市安佐北区亀山3丁目4-12",
-    "phone": "082-819-3725",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.523582,
-    "lng": 132.499405
-  },
-  {
-    "category": "障害・包括",
-    "name": "メリィショートステイ可部",
-    "address": "広島県広島市安佐北区可部1丁目16-15",
-    "phone": "082-819-0282",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.51268,
-    "lng": 132.507492
-  },
-  {
-    "category": "障害・包括",
-    "name": "愛の家グループホーム広島亀山",
-    "address": "広島県広島市安佐北区亀山5丁目9-13",
-    "phone": "082-819-3255",
-    "priority": "中",
-    "status": "未接触",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.525833,
-    "lng": 132.496078
-  },
-  {
-    "category": "障害・包括",
-    "name": "そらいろ相談支援センター",
-    "address": "安佐南区祇園三丁目１６番１－１０１号",
-    "phone": "0829-62-4985",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.440903,
-    "lng": 132.460388
-  },
-  {
-    "category": "障害・包括",
-    "name": "介護老人保健施設菜の花",
-    "address": "広島県広島市安佐北区可部5丁目4-19-10",
-    "phone": "082-814-0008",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.521557,
-    "lng": 132.509293
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "その他",
     "name": "あおのまち広島長束",
+    "corp": "株式会社はれコーポレーション",
     "address": "広島県広島市安佐南区長束6丁目1-10",
     "phone": "082-962-2136",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.5,
     "lat": 34.434471,
     "lng": 132.45787
   },
   {
     "category": "障害・包括",
-    "name": "グループホームふれあい戸坂東",
-    "address": "広島県広島市東区戸坂千足1丁目12-46",
-    "phone": "082-220-3000",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.435055,
-    "lng": 132.479141
-  },
-  {
-    "category": "障害・包括",
-    "name": "ライフパートナー戸坂",
-    "address": "広島県広島市東区戸坂くるめ木1丁目1-48",
-    "phone": "082-229-3510",
+    "sub_category": "その他",
+    "name": "小規模多機能型施設縁が和",
+    "corp": "特定非営利活動法人かべ工房村",
+    "address": "広島県広島市安佐北区亀山南2丁目3-27",
+    "phone": "082-819-1750",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.434849,
-    "lng": 132.479462
+    "distance": 7.6,
+    "lat": 34.517498,
+    "lng": 132.496658
   },
   {
     "category": "障害・包括",
+    "sub_category": "その他",
     "name": "ゆえん祇園",
+    "corp": "社会福祉法人創造",
     "address": "広島県広島市安佐南区長束6丁目10番8号",
     "phone": "082-225-7620",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-06",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.6,
     "lat": 34.434246,
     "lng": 132.453308
   },
   {
     "category": "障害・包括",
-    "name": "サポートハウス菜の花畑",
-    "address": "広島県広島市安佐北区可部六丁目14番8号",
-    "phone": "082-516-7727",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.525314,
-    "lng": 132.506882
-  },
-  {
-    "category": "障害・包括",
-    "name": "特養なごみの郷",
-    "address": "広島県広島市安佐北区落合南町196-1",
-    "phone": "082-841-1331",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.456085,
-    "lng": 132.517395
-  },
-  {
-    "category": "障害・包括",
-    "name": "グループホームかんべの里",
-    "address": "広島県広島市安佐北区可部七丁目13番15−1−9号かんべの里",
-    "phone": "082-554-8800",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.523712,
-    "lng": 132.511108
-  },
-  {
-    "category": "障害・包括",
-    "name": "フェニックスケアハウスかんべ村",
-    "address": "広島市安佐北区可部7丁目13番15－1－7号",
-    "phone": "082-812-3588",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.523712,
-    "lng": 132.511108
-  },
-  {
-    "category": "障害・包括",
-    "name": "愛の家グループホーム広島高陽",
-    "address": "広島県広島市安佐北区落合南7丁目10-20",
-    "phone": "082-841-5670",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.474609,
-    "lng": 132.521652
-  },
-  {
-    "category": "障害・包括",
-    "name": "ケアハウスかんべ村",
-    "address": "広島県広島市安佐北区可部7丁目13",
-    "phone": "082-812-3588",
-    "priority": "中",
-    "status": "保留",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.523525,
-    "lng": 132.510239
-  },
-  {
-    "category": "障害・包括",
-    "name": "ショートステイそわか",
-    "address": "広島県広島市安佐北区可部東5-9-15",
-    "phone": "082-836-5301",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.521885,
-    "lng": 132.515656
-  },
-  {
-    "category": "障害・包括",
-    "name": "社会福祉施設花みずき",
-    "address": "広島県広島市安佐北区可部南3丁目10-23",
-    "phone": "082-810-0510",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.501366,
-    "lng": 132.515686
-  },
-  {
-    "category": "障害・包括",
-    "name": "ワールドステイ平政",
-    "address": "広島県広島市安佐北区可部七丁目19番8号",
-    "phone": "082-814-7350",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.526073,
-    "lng": 132.511444
-  },
-  {
-    "category": "障害・包括",
-    "name": "elama可部",
-    "address": "広島県広島市安佐北区可部7丁目15-43",
-    "phone": "082-819-2101",
-    "priority": "中",
-    "status": "訪問済",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.52589,
-    "lng": 132.51123
-  },
-  {
-    "category": "障害・包括",
+    "sub_category": "グループホーム",
     "name": "愛の家グループホーム祇園山本",
+    "corp": "株式会社ケア２１",
     "address": "広島県広島市安佐南区山本4丁目12-56-3",
     "phone": "082-832-3221",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 7.8,
     "lat": 34.438568,
     "lng": 132.448578
   },
   {
     "category": "障害・包括",
-    "name": "ガーデンの家落合南",
-    "address": "広島県広島市安佐北区落合南九丁目5番20号",
-    "phone": "082-843-4165",
+    "sub_category": "その他",
+    "name": "ケアホームディア・レスト可部",
+    "corp": "株式会社Ｍ＆Ｃコラボレイション",
+    "address": "広島県広島市安佐北区亀山1丁目17-16",
+    "phone": "082-819-3800",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.476486,
-    "lng": 132.525299
+    "distance": 8.2,
+    "lat": 34.516022,
+    "lng": 132.501404
   },
   {
     "category": "障害・包括",
+    "sub_category": "その他",
     "name": "そわか若葉台",
+    "corp": "シューペルブリアン株式会社",
     "address": "広島県広島市安佐南区伴北7-32-35",
     "phone": "082-836-5301",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 8.4,
     "lat": 34.485714,
     "lng": 132.402618
   },
   {
     "category": "障害・包括",
-    "name": "介護付有料老人ホーム あいらの杜 広島戸坂",
-    "address": "広島市東区戸坂大上３丁目２−２２",
-    "phone": "082-229-7545",
-    "priority": "",
-    "status": "",
-    "contact_person": "",
-    "note": "",
-    "lat": 34.427338,
-    "lng": 132.493423
-  },
-  {
-    "category": "障害・包括",
-    "name": "サ高住ペルル長久堂野村病院",
-    "address": "広島県広島市安佐北区可部南四丁目17番30号",
-    "phone": "082-815-2882",
+    "sub_category": "相談支援",
+    "name": "相談支援センタースクラム",
+    "corp": "特定非営利活動法人みんなでスクラム生活支援センター",
+    "address": "広島県広島市安佐北区落合1丁目13-18",
+    "phone": "082-845-3277",
     "priority": "中",
     "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-04-16",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
-    "lat": 34.504768,
-    "lng": 132.512772
+    "distance": 8.5,
+    "lat": 34.471027,
+    "lng": 132.510483
   },
   {
     "category": "障害・包括",
-    "name": "グループホームふれあい戸坂東",
-    "address": "広島市東区戸坂大上３丁目２−３０",
-    "phone": "082-220-3000",
-    "priority": "",
-    "status": "",
+    "sub_category": "その他",
+    "name": "メリィショートステイ可部",
+    "corp": "富士メディカル株式会社",
+    "address": "広島県広島市安佐北区可部1丁目16-15",
+    "phone": "082-819-0282",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-22",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 8.6,
+    "lat": 34.51268,
+    "lng": 132.507492
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "特養なごみの郷",
+    "corp": "社会福祉法人正仁会",
+    "address": "広島県広島市安佐北区落合南町196-1",
+    "phone": "082-841-1331",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.6,
+    "lat": 34.456085,
+    "lng": 132.517395
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ニチイケアセンター可部",
+    "corp": "株式会社ニチイ学館",
+    "address": "広島県広島市安佐北区亀山2-15-33",
+    "phone": "082-819-3531",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.8,
+    "lat": 34.518333,
+    "lng": 132.507782
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "相談支援",
+    "name": "ぽらりす相談支援センター",
+    "corp": "株式会社ぽらりす",
+    "address": "広島県広島市安佐南区伴北7-52-17",
+    "phone": "090-3206-5975",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 8.8,
+    "lat": 34.48595,
+    "lng": 132.40593
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ライフパートナー戸坂",
+    "corp": "株式会社エメラルドの郷",
+    "address": "広島県広島市東区戸坂くるめ木1丁目1-48",
+    "phone": "082-229-3510",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-09",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.3,
+    "lat": 34.434849,
+    "lng": 132.479462
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームふれあい戸坂東",
+    "corp": "医療法人好縁会",
+    "address": "広島県広島市東区戸坂千足1丁目12-46",
+    "phone": "082-220-3000",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-08",
+    "latest_visit": "2026-10-09",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.4,
     "lat": 34.426849,
     "lng": 132.49324
   },
   {
     "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームなごみの郷亀山",
+    "corp": "社会福祉法人正仁会",
+    "address": "広島県広島市安佐北区亀山3丁目4-12",
+    "phone": "082-819-3725",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.5,
+    "lat": 34.523582,
+    "lng": 132.499405
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "介護老人保健施設菜の花",
+    "corp": "医療法人秀仁会",
+    "address": "広島県広島市安佐北区可部5丁目4-19-10",
+    "phone": "082-814-0008",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.6,
+    "lat": 34.521557,
+    "lng": 132.509293
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "愛の家グループホーム広島高陽",
+    "corp": "メディカル・ケア・サービス関西株式会社",
+    "address": "広島県広島市安佐北区落合南7丁目10-20",
+    "phone": "082-841-5670",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-13",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.6,
+    "lat": 34.474609,
+    "lng": 132.521652
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "サポートハウス菜の花畑",
+    "corp": "医療法人秀仁会",
+    "address": "広島県広島市安佐北区可部六丁目14番8号",
+    "phone": "082-516-7727",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-06-15",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.8,
+    "lat": 34.525314,
+    "lng": 132.506882
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ガーデンの家落合南",
+    "corp": "有限会社サカコーポレーション",
+    "address": "広島県広島市安佐北区落合南九丁目5番20号",
+    "phone": "082-843-4165",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-07",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.8,
+    "lat": 34.476486,
+    "lng": 132.525299
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "介護付有料老人ホーム あいらの杜 広島戸坂",
+    "corp": "株式会社はれコーポレーション",
+    "address": "広島県広島市東区戸坂大上３丁目２−２２",
+    "phone": "082-229-7545",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-10",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.8,
+    "lat": 34.427338,
+    "lng": 132.493423
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームふれあい戸坂",
+    "corp": "医療法人好縁会",
+    "address": "広島県広島市東区戸坂大上３丁目２−３０",
+    "phone": "082-229-2822",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-08-10",
+    "latest_visit": "2026-10-08",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 9.9,
+    "lat": 34.426849,
+    "lng": 132.49324
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ワールドステイ平政",
+    "corp": "株式会社ワールドステイ",
+    "address": "広島県広島市安佐北区可部七丁目19番8号",
+    "phone": "082-814-7350",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.1,
+    "lat": 34.526073,
+    "lng": 132.511444
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "elama可部",
+    "corp": "株式会社ＲＵＢＩＣＯＮ",
+    "address": "広島県広島市安佐北区可部7丁目15-43",
+    "phone": "082-819-2101",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.1,
+    "lat": 34.52589,
+    "lng": 132.51123
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホームかんべの里",
+    "corp": "社会福祉法人フェニックス",
+    "address": "広島県広島市安佐北区可部七丁目13番15−1−9号かんべの里",
+    "phone": "082-554-8800",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.2,
+    "lat": 34.523712,
+    "lng": 132.511108
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "フェニックスケアハウスかんべ村",
+    "corp": "社会福祉法人フェニックス",
+    "address": "広島県広島市安佐北区可部7丁目13番15－1－7号",
+    "phone": "082-812-3588",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.2,
+    "lat": 34.523712,
+    "lng": 132.511108
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ケアハウスかんべ村",
+    "corp": "社会福祉法人フェニックス",
+    "address": "広島県広島市安佐北区可部7丁目13番15－1－7号",
+    "phone": "082-812-3588",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.2,
+    "lat": 34.523525,
+    "lng": 132.510239
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ショートステイそわか",
+    "corp": "シューペルブリアン株式会社",
+    "address": "広島県広島市安佐北区可部東5-9-15",
+    "phone": "082-836-5301",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-06-15",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.3,
+    "lat": 34.521885,
+    "lng": 132.515656
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "社会福祉施設花みずき",
+    "corp": "社会福祉法人可部大文字会",
+    "address": "広島県広島市安佐北区可部南3丁目10-23",
+    "phone": "082-810-0510",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-03",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.5,
+    "lat": 34.501366,
+    "lng": 132.515686
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "愛の家グループホーム広島亀山",
+    "corp": "メディカル・ケア・サービス関西株式会社",
+    "address": "広島県広島市安佐北区亀山5丁目9-13",
+    "phone": "082-819-3255",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-06",
+    "latest_visit": "2026-10-19",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 10.5,
+    "lat": 34.525833,
+    "lng": 132.496078
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "サ高住ペルル長久堂野村病院",
+    "corp": "医療法人長久堂野村病院",
+    "address": "広島県広島市安佐北区可部南四丁目17番30号",
+    "phone": "082-815-2882",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-05-15",
+    "latest_visit": "2026-10-02",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 11.0,
+    "lat": 34.504768,
+    "lng": 132.512772
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
     "name": "特養可部南静養園",
+    "corp": "社会福祉法人広島県同胞援護財団",
     "address": "広島県広島市安佐北区可部南2丁目19-33",
     "phone": "082-562-2503",
     "priority": "中",
-    "status": "保留",
+    "status": "訪問済",
+    "original_status": "",
     "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-02",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
     "note": "",
+    "distance": 11.4,
     "lat": 34.501587,
     "lng": 132.518372
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "その他",
+    "name": "ゆえん西広島",
+    "corp": "社会福祉法人創造",
+    "address": "広島県広島市西区福島町２丁目２４−２１",
+    "phone": "082-942-5440",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-09-30",
+    "latest_visit": "2026-10-20",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 13.6,
+    "lat": 34.392467,
+    "lng": 132.431686
+  },
+  {
+    "category": "障害・包括",
+    "sub_category": "グループホーム",
+    "name": "グループホーム阿戸福香の家",
+    "corp": "有限会社ホットファミリー",
+    "address": "広島県広島市安佐南区沼田町阿戸３８２５",
+    "phone": "082-830-4055",
+    "priority": "中",
+    "status": "訪問済",
+    "original_status": "",
+    "contact_person": "",
+    "first_visit": "2026-07-07",
+    "latest_visit": "2026-10-14",
+    "reaction": "",
+    "next_action": "",
+    "next_date": "",
+    "note": "",
+    "distance": 15.2,
+    "lat": 34.495541,
+    "lng": 132.363525
   }
 ];
-</script>
-    <!-- Custom JS -->
-    <script>
-// Initialize the map (デフォルトは広島市中心部付近)
-const map = L.map('map').setView([34.460, 132.470], 12);
 
-// Add OpenStreetMap tile layer
+</script>
+    <!-- Custom Application Logic -->
+    <script>
+// ==========================================================================
+// あさタクシー 営業先エリアマップ アプリケーションロジック
+// ==========================================================================
+
+// 定数定義
+const OFFICE_COORDS = [34.484222, 132.458191]; // 安東営業所 (広島市安佐南区安東5丁目7-9)
+const CATEGORY_COLORS = {
+    "居宅": "#0284c7",       // スカイブルー
+    "施設": "#10b981",       // エメラルドグリーン
+    "病院": "#ef4444",       // クリムゾンレッド
+    "障害・包括": "#8b5cf6", // パープル
+    "その他": "#64748b"      // スレートグレー
+};
+
+// 状態管理
+let currentFilters = {
+    category: "all",
+    status: "all",
+    distance: "all",
+    search: ""
+};
+
+let currentSort = "distance_asc";
+let markers = [];
+let officeMarker = null;
+let userLocationMarker = null;
+let markerLayer = L.layerGroup();
+
+// 地図の初期化
+const map = L.map('map', {
+    zoomControl: false // スマホで邪魔になりにくくするため右下やカスタム位置に
+}).setView(OFFICE_COORDS, 13);
+
+// ズームコントロールを右下に配置
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// タイルレイヤー
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-// Colors for categories
-const categoryColors = {
-    "居宅": "#3498db",   // Blue
-    "施設": "#2ecc71",   // Green
-    "病院": "#e74c3c",   // Red
-    "障害": "#9b59b6",   // Purple
-    "その他": "#95a5a6"  // Gray
-};
+markerLayer.addTo(map);
 
-// Create legend in Header
-const legendContainer = document.getElementById('legend');
-for (const [cat, color] of Object.entries(categoryColors)) {
-    if (cat === "その他") continue;
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = `<div class="legend-color" style="background-color: ${color}"></div><span>${cat}</span>`;
-    legendContainer.appendChild(item);
-}
+// ==========================================================================
+// アイコン生成関数
+// ==========================================================================
 
-// Function to create custom SVG marker icon based on category color
-function createCustomIcon(categoryColor) {
-    const svgIcon = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="32" height="42">
-        <path fill="${categoryColor}" stroke="#ffffff" stroke-width="2.5" d="M16 2C8.268 2 2 8.268 2 16c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z"/>
-        <circle fill="#ffffff" cx="16" cy="16" r="6"/>
-    </svg>`;
-    
+// 営業所ピン (ゴールド/タクシー)
+function createOfficeIcon() {
+    const html = `
+    <div class="custom-pin-wrapper office-pin" style="width:36px;height:46px;">
+        <svg viewBox="0 0 36 46" width="36" height="46" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));">
+            <path fill="#f59e0b" stroke="#ffffff" stroke-width="2.5" d="M18 2C9.163 2 2 9.163 2 18c0 11.8 16 26 16 26s16-14.2 16-26c0-8.837-7.163-16-16-16z"/>
+            <circle fill="#ffffff" cx="18" cy="18" r="10"/>
+            <text x="18" y="22" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">🚖</text>
+        </svg>
+        <div class="pin-shadow" style="width:20px;"></div>
+    </div>`;
     return L.divIcon({
-        html: svgIcon,
-        className: 'custom-leaflet-marker',
-        iconSize: [32, 42],
-        iconAnchor: [16, 42],
-        popupAnchor: [0, -40]  // Offset popup so it doesn't cover the marker
+        html: html,
+        className: 'office-leaflet-marker',
+        iconSize: [36, 46],
+        iconAnchor: [18, 46],
+        popupAnchor: [0, -42]
     });
 }
 
-// Load JSON data and plot markers
-function plotMarkers(data) {
-        let bounds = []; // To automatically calculate center/zoom
+// 営業先マーカーピン
+function createPinIcon(category, isVisited) {
+    const color = CATEGORY_COLORS[category] || CATEGORY_COLORS["その他"];
+    const ringHtml = isVisited ? '' : '<div class="pin-unvisited-ring"></div>';
+    
+    // 訪問済はチェックマーク、未接触は注意アイコン
+    const symbol = isVisited 
+        ? `<circle fill="#ffffff" cx="16" cy="15" r="6"/><path d="M13.5 15l2 2 3.5-3.5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+        : `<circle fill="#ffffff" cx="16" cy="15" r="6"/><circle fill="#ea580c" cx="16" cy="15" r="3"/>`;
 
-        data.forEach(item => {
-            if (!item.lat || !item.lng) return;
+    const svg = `
+    <div class="custom-pin-wrapper" style="width:32px;height:42px;">
+        ${ringHtml}
+        <svg viewBox="0 0 32 42" width="32" height="42" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));">
+            <path fill="${color}" stroke="#ffffff" stroke-width="2" d="M16 2C8.268 2 2 8.268 2 16c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z"/>
+            ${symbol}
+        </svg>
+        <div class="pin-shadow"></div>
+    </div>`;
 
-            // Gather bounds to zoom later
-            bounds.push([item.lat, item.lng]);
+    return L.divIcon({
+        html: svg,
+        className: 'custom-leaflet-marker',
+        iconSize: [32, 42],
+        iconAnchor: [16, 42],
+        popupAnchor: [0, -38]
+    });
+}
 
-            // Marker Color
-            const color = categoryColors[item.category] || categoryColors["その他"];
-            const icon = createCustomIcon(color);
-            
-            // Format Priority Badge
-            let priorityClass = 'priority-none';
-            if (item.priority && item.priority.includes('高')) priorityClass = 'priority-high';
-            else if (item.priority && item.priority.includes('中')) priorityClass = 'priority-mid';
-            else if (item.priority && item.priority.includes('低')) priorityClass = 'priority-low';
-            
-            const priorityVal = item.priority && item.priority !== "None" ? item.priority : "設定なし";
-            const priorityHtml = item.priority && item.priority !== "None" ? `<span class="badge ${priorityClass}">優先度: ${item.priority}</span>` : '';
-            
-            // Format Optional Fields
-            const safeText = text => text === "None" || !text ? "" : text;
-            const statusHtml = safeText(item.status) ? `<p><strong>ステータス:</strong> ${item.status}</p>` : '';
-            const contactHtml = safeText(item.contact_person) ? `<p><strong>担当者:</strong> ${item.contact_person}</p>` : '';
-            const phoneHtml = safeText(item.phone) ? `<p><strong>電話:</strong> <a href="tel:${item.phone}">${item.phone}</a></p>` : '';
-            
-            // Format Note with special styling
-            let noteHtml = "";
-            if (safeText(item.note)) {
-                // Formatting long notes properly
-                const formattedNote = item.note.replace(/\n/g, '<br>');
-                noteHtml = `<p style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"><strong>備考:</strong><br><span style="font-size:0.85rem;color:#555;">${formattedNote}</span></p>`;
+// ==========================================================================
+// ポップアップ HTML 構築
+// ==========================================================================
+function buildPopupContent(item) {
+    const color = CATEGORY_COLORS[item.category] || CATEGORY_COLORS["その他"];
+    const isVisited = item.status === "訪問済";
+    const statusText = isVisited ? `✔ 10月訪問済 (${item.latest_visit || "日付確認"})` : `⚠️ 10月未接触`;
+    const statusClass = isVisited ? "visited" : "unvisited";
+    
+    const distText = (item.distance !== null && item.distance !== undefined) 
+        ? `安東営業所から ${item.distance} km` 
+        : "";
+
+    // Google Maps ナビ URL
+    const destQuery = encodeURIComponent(item.address ? `${item.address} ${item.name}` : item.name);
+    const gmapsNavUrl = `https://www.google.com/maps/dir/?api=1&destination=${destQuery}`;
+
+    // 電話番号リンク
+    const phoneBtn = item.phone 
+        ? `<a href="tel:${item.phone}" class="btn-action btn-call">📞 電話をかける</a>` 
+        : `<button class="btn-action btn-call" style="opacity:0.5;cursor:not-allowed;" disabled>📞 電話なし</button>`;
+
+    return `
+    <div class="popup-card">
+        <div class="popup-header" style="background-color: ${color}">
+            <div class="popup-top-row">
+                <span class="popup-category-badge">${item.category}${item.sub_category ? ` (${item.sub_category})` : ''}</span>
+                ${distText ? `<span class="popup-distance-badge">📍 ${distText}</span>` : ''}
+            </div>
+            <h4 class="popup-title">${item.name}</h4>
+        </div>
+        <div class="popup-body">
+            <div class="popup-status-banner ${statusClass}">
+                ${statusText}
+            </div>
+            <div class="popup-meta-list">
+                <div class="meta-row">
+                    <span class="meta-label">住所:</span>
+                    <span class="meta-value">${item.address || "未登録"}</span>
+                </div>
+                ${item.phone ? `
+                <div class="meta-row">
+                    <span class="meta-label">電話:</span>
+                    <span class="meta-value"><a href="tel:${item.phone}" style="color:#0284c7;font-weight:600;">${item.phone}</a></span>
+                </div>` : ''}
+                ${item.contact_person ? `
+                <div class="meta-row">
+                    <span class="meta-label">担当者:</span>
+                    <span class="meta-value">${item.contact_person}</span>
+                </div>` : ''}
+                ${item.corp ? `
+                <div class="meta-row">
+                    <span class="meta-label">法人名:</span>
+                    <span class="meta-value">${item.corp}</span>
+                </div>` : ''}
+                ${item.first_visit ? `
+                <div class="meta-row">
+                    <span class="meta-label">初回訪問:</span>
+                    <span class="meta-value">${item.first_visit}</span>
+                </div>` : ''}
+                ${item.note ? `
+                <div class="meta-row" style="margin-top:4px;padding-top:4px;border-top:1px dashed #e2e8f0;">
+                    <span class="meta-label">メモ:</span>
+                    <span class="meta-value" style="font-size:0.78rem;color:#475569;">${item.note}</span>
+                </div>` : ''}
+            </div>
+            <div class="popup-actions">
+                ${phoneBtn}
+                <a href="${gmapsNavUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-nav">🗺️ ここへナビ</a>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ==========================================================================
+// データのプロットとバッジ初期化
+// ==========================================================================
+async function initApp() {
+    let data = window.mapData;
+    if (!data && typeof mapData !== 'undefined') {
+        data = mapData;
+    }
+    
+    // もしグローバルに無ければ fetch で取得を試みる
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        try {
+            const resp = await fetch('map_data.json');
+            if (resp.ok) {
+                data = await resp.json();
             }
+        } catch (e) {
+            console.warn("fetch fallback failed:", e);
+        }
+    }
 
-            // Popup HTML Template
-            const popupContent = `
-                <div class="popup-header" style="background-color: ${color}">
-                    ${safeText(item.name) || "名称不明"}
-                </div>
-                <div class="popup-body">
-                    ${priorityHtml}
-                    <p><strong>住所:</strong> ${safeText(item.address) || "不明"}</p>
-                    ${phoneHtml}
-                    ${contactHtml}
-                    ${statusHtml}
-                    ${noteHtml}
-                </div>
-            `;
+    if (!data || !Array.isArray(data)) {
+        console.error("mapData が読み込まれていません");
+        return;
+    }
+    window.mapData = data;
 
-            // Add marker to map
-            L.marker([item.lat, item.lng], { icon: icon })
-                .bindPopup(popupContent, { minWidth: 280, maxWidth: 350 })
-                .addTo(map);
+    // 1. 安東営業所ピンの設置
+    officeMarker = L.marker(OFFICE_COORDS, {
+        icon: createOfficeIcon(),
+        zIndexOffset: 1000
+    }).addTo(map);
+
+    officeMarker.bindPopup(`
+        <div style="padding:10px;text-align:center;">
+            <h4 style="margin:0 0 6px 0;font-size:1.05rem;">🚖 あさタクシー 安東営業所</h4>
+            <p style="margin:0 0 6px 0;font-size:0.85rem;color:#475569;">広島市安佐南区安東5丁目7-9</p>
+            <span style="font-size:0.75rem;background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:12px;font-weight:600;">営業拠点・基準点</span>
+        </div>
+    `, { minWidth: 220 });
+
+    // 2. 各営業先マーカーの作成
+    window.mapData.forEach((item, index) => {
+        if (!item.lat || !item.lng) return;
+
+        const isVisited = item.status === "訪問済";
+        const icon = createPinIcon(item.category, isVisited);
+        const marker = L.marker([item.lat, item.lng], { icon: icon });
+
+        marker.bindPopup(buildPopupContent(item), {
+            minWidth: 280,
+            maxWidth: 340,
+            className: 'custom-popup-container'
         });
 
-        if (bounds.length > 0) {
-            map.fitBounds(bounds, { padding: [30, 30] });
-        }
+        markers.push({
+            data: item,
+            marker: marker,
+            index: index
+        });
+    });
+
+    // 3. バッジ集計
+    updateStatsBadges();
+
+    // 4. イベントハンドラーの登録
+    setupEventListeners();
+
+    // 5. 初期フィルタ適用
+    applyFilters();
 }
-plotMarkers(mapData);
+
+// バッジ数字の更新
+function updateStatsBadges() {
+    const total = mapData.length;
+    let visited = 0, unvisited = 0;
+    let kyotaku = 0, shisetsu = 0, byoin = 0, shogai = 0;
+
+    mapData.forEach(d => {
+        if (d.status === "訪問済") visited++;
+        else unvisited++;
+
+        if (d.category === "居宅") kyotaku++;
+        else if (d.category === "施設") shisetsu++;
+        else if (d.category === "病院") byoin++;
+        else if (d.category === "障害・包括") shogai++;
+    });
+
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('visitedCount').textContent = visited;
+    document.getElementById('unvisitedCount').textContent = unvisited;
+
+    document.getElementById('badgeKyotaku').textContent = kyotaku;
+    document.getElementById('badgeShisetsu').textContent = shisetsu;
+    document.getElementById('badgeByoin').textContent = byoin;
+    document.getElementById('badgeShogai').textContent = shogai;
+}
+
+// ==========================================================================
+// フィルター適用処理
+// ==========================================================================
+function applyFilters() {
+    markerLayer.clearLayers();
+    const filteredMarkers = [];
+    const searchLower = currentFilters.search.toLowerCase().trim();
+
+    markers.forEach(m => {
+        const d = m.data;
+
+        // カテゴリ判定
+        if (currentFilters.category !== "all" && d.category !== currentFilters.category) {
+            return;
+        }
+
+        // ステータス判定
+        if (currentFilters.status !== "all" && d.status !== currentFilters.status) {
+            return;
+        }
+
+        // 距離判定
+        if (currentFilters.distance !== "all") {
+            const maxDist = parseFloat(currentFilters.distance);
+            if (d.distance === null || d.distance === undefined || d.distance > maxDist) {
+                return;
+            }
+        }
+
+        // 検索文字列判定
+        if (searchLower) {
+            const matchName = (d.name || "").toLowerCase().includes(searchLower);
+            const matchAddr = (d.address || "").toLowerCase().includes(searchLower);
+            const matchContact = (d.contact_person || "").toLowerCase().includes(searchLower);
+            const matchCorp = (d.corp || "").toLowerCase().includes(searchLower);
+            const matchNote = (d.note || "").toLowerCase().includes(searchLower);
+            if (!matchName && !matchAddr && !matchContact && !matchCorp && !matchNote) {
+                return;
+            }
+        }
+
+        markerLayer.addLayer(m.marker);
+        filteredMarkers.push(m);
+    });
+
+    // カウント表示の更新
+    const count = filteredMarkers.length;
+    document.getElementById('listCount').textContent = count;
+    document.getElementById('drawerCount').textContent = count;
+
+    // ドロワー内のリスト再描画
+    renderDrawerList(filteredMarkers);
+}
+
+// ==========================================================================
+// ドロワー（一覧リスト）の描画
+// ==========================================================================
+function renderDrawerList(filteredMarkers) {
+    const listContainer = document.getElementById('drawerList');
+    listContainer.innerHTML = '';
+
+    if (filteredMarkers.length === 0) {
+        listContainer.innerHTML = `<div style="text-align:center;padding:30px 10px;color:#94a3b8;font-size:0.9rem;">該当する営業先は見つかりませんでした</div>`;
+        return;
+    }
+
+    // ソート処理
+    const sorted = [...filteredMarkers].sort((a, b) => {
+        if (currentSort === "distance_asc") {
+            const distA = a.data.distance !== null ? a.data.distance : 999;
+            const distB = b.data.distance !== null ? b.data.distance : 999;
+            return distA - distB;
+        } else if (currentSort === "latest_desc") {
+            const dateA = a.data.latest_visit || "";
+            const dateB = b.data.latest_visit || "";
+            return dateB.localeCompare(dateA);
+        } else if (currentSort === "name_asc") {
+            return (a.data.name || "").localeCompare(b.data.name || "");
+        }
+        return 0;
+    });
+
+    sorted.forEach(m => {
+        const d = m.data;
+        const color = CATEGORY_COLORS[d.category] || CATEGORY_COLORS["その他"];
+        const isVisited = d.status === "訪問済";
+        const badgeBg = isVisited ? "#ecfdf5" : "#fff7ed";
+        const badgeColor = isVisited ? "#065f46" : "#9a3412";
+        const badgeText = isVisited ? `✔ 10月済 (${d.latest_visit || ""})` : `⚠️ 未接触`;
+
+        const card = document.createElement('div');
+        card.className = 'drawer-item-card';
+        card.innerHTML = `
+            <div class="drawer-card-top">
+                <span class="drawer-card-title">${d.name}</span>
+                <span class="drawer-card-badge" style="background:${badgeBg};color:${badgeColor}">${badgeText}</span>
+            </div>
+            <div class="drawer-card-bottom">
+                <span style="color:${color};font-weight:600;">${d.category}</span>
+                <span>${d.distance !== null ? `📍 ${d.distance} km` : ''}</span>
+                <span style="font-size:0.75rem;">${d.phone || ''}</span>
+            </div>
+        `;
+
+        card.addEventListener('click', () => {
+            // ドロワーの高さを低くするか閉じる
+            closeDrawer();
+            map.setView([d.lat, d.lng], 16, { animate: true });
+            setTimeout(() => {
+                m.marker.openPopup();
+            }, 300);
+        });
+
+        listContainer.appendChild(card);
+    });
+}
+
+// ドロワー開閉
+function openDrawer() {
+    document.getElementById('listDrawer').classList.add('open');
+}
+function closeDrawer() {
+    document.getElementById('listDrawer').classList.remove('open');
+}
+function toggleDrawer() {
+    document.getElementById('listDrawer').classList.toggle('open');
+}
+
+// ==========================================================================
+// イベントリスナーのセットアップ
+// ==========================================================================
+function setupEventListeners() {
+    // フィルターチップクリック
+    document.querySelectorAll('.chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const filterType = btn.getAttribute('data-filter');
+            const filterVal = btn.getAttribute('data-val');
+
+            // 同グループのactive解除
+            document.querySelectorAll(`.chip[data-filter="${filterType}"]`).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            currentFilters[filterType] = filterVal;
+            applyFilters();
+        });
+    });
+
+    // 検索入力
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearch');
+
+    searchInput.addEventListener('input', (e) => {
+        currentFilters.search = e.target.value;
+        clearBtn.style.display = e.target.value ? 'flex' : 'none';
+        applyFilters();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        currentFilters.search = '';
+        clearBtn.style.display = 'none';
+        applyFilters();
+    });
+
+    // フローティングボタン: 営業所へ移動
+    document.getElementById('btnOffice').addEventListener('click', () => {
+        map.setView(OFFICE_COORDS, 14, { animate: true });
+        if (officeMarker) {
+            setTimeout(() => officeMarker.openPopup(), 200);
+        }
+    });
+
+    // フローティングボタン: GPS現在地
+    document.getElementById('btnGps').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert("お使いの端末・ブラウザではGPS位置情報がサポートされていません。");
+            return;
+        }
+
+        const btn = document.getElementById('btnGps');
+        btn.style.opacity = "0.6";
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                btn.style.opacity = "1";
+                const userLat = pos.coords.latitude;
+                const userLng = pos.coords.longitude;
+
+                if (userLocationMarker) {
+                    map.removeLayer(userLocationMarker);
+                }
+
+                // ユーザー現在地アイコン
+                const gpsIcon = L.divIcon({
+                    html: `<div class="user-gps-dot"><div class="user-gps-pulse"></div></div>`,
+                    className: 'user-gps-marker',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                userLocationMarker = L.marker([userLat, userLng], { icon: gpsIcon, zIndexOffset: 2000 }).addTo(map);
+                userLocationMarker.bindPopup("<strong>📍 あなたの現在地</strong>").openPopup();
+
+                map.setView([userLat, userLng], 15, { animate: true });
+            },
+            (err) => {
+                btn.style.opacity = "1";
+                alert(`現在地を取得できませんでした: ${err.message}`);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    });
+
+    // フローティングボタン: リスト表示トグル
+    document.getElementById('btnToggleList').addEventListener('click', toggleDrawer);
+    document.getElementById('btnCloseDrawer').addEventListener('click', closeDrawer);
+
+    // ソート切り替え
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        applyFilters();
+    });
+}
+
+// ドキュメント読み込み完了時に実行
+document.addEventListener('DOMContentLoaded', initApp);
 
 </script>
 </body>

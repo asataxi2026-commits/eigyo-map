@@ -2,25 +2,123 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>営業の関係 - エリアマップ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>あさタクシー 営業先エリアマップ | 最新10月進捗連動</title>
+    <meta name="description" content="あさタクシー営業先管理シート連動・最新進捗状況リアルタイム反映エリアマップ（スマートフォン対応）">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="header">
-        <h1>📍 営業の関係 - エリアマップ <a href="may_map.html" style="font-size: 14px; color: #ffeb3b; text-decoration: none; margin-left: 20px; border: 1px solid #ffeb3b; padding: 2px 8px; border-radius: 4px;">▶ 5月訪問のみ表示</a></h1>
-        <div class="legend" id="legend"></div>
-    </div>
+    <!-- Top Control Bar -->
+    <header id="header">
+        <div class="header-top">
+            <div class="brand">
+                <span class="brand-icon">🚖</span>
+                <div class="brand-text">
+                    <h1>あさタクシー 営業先マップ</h1>
+                    <span class="sub-text">2026年10月度 進捗管理連動版</span>
+                </div>
+            </div>
+            <div class="header-stats" id="headerStats">
+                <span class="stat-pill">全 <strong id="totalCount">0</strong> 件</span>
+                <span class="stat-pill visited">訪問済 <strong id="visitedCount">0</strong></span>
+                <span class="stat-pill unvisited">未接触 <strong id="unvisitedCount">0</strong></span>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="事業所名・病院名・住所・担当者で検索..." autocomplete="off">
+            <button id="clearSearch" class="clear-btn" style="display:none;" aria-label="検索クリア">✕</button>
+        </div>
+
+        <!-- Filter Chips (Scrollable on Mobile) -->
+        <div class="filter-bar">
+            <!-- Category Filters -->
+            <div class="filter-group">
+                <button class="chip active" data-filter="category" data-val="all">すべて</button>
+                <button class="chip cat-kyotaku" data-filter="category" data-val="居宅">居宅 <span class="badge" id="badgeKyotaku">0</span></button>
+                <button class="chip cat-shisetsu" data-filter="category" data-val="施設">施設 <span class="badge" id="badgeShisetsu">0</span></button>
+                <button class="chip cat-byoin" data-filter="category" data-val="病院">病院 <span class="badge" id="badgeByoin">0</span></button>
+                <button class="chip cat-shogai" data-filter="category" data-val="障害・包括">障害・包括 <span class="badge" id="badgeShogai">0</span></button>
+            </div>
+
+            <div class="divider-v"></div>
+
+            <!-- Status Filters -->
+            <div class="filter-group">
+                <button class="chip status-chip active" data-filter="status" data-val="all">ステータス全</button>
+                <button class="chip status-chip chip-visited" data-filter="status" data-val="訪問済">✔ 10月訪問済</button>
+                <button class="chip status-chip chip-unvisited" data-filter="status" data-val="未接触">⚠️ 未接触のみ</button>
+            </div>
+
+            <div class="divider-v"></div>
+
+            <!-- Distance Filters -->
+            <div class="filter-group">
+                <button class="chip dist-chip active" data-filter="distance" data-val="all">全距離</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="3">3km圏内</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="5">5km圏内</button>
+                <button class="chip dist-chip" data-filter="distance" data-val="10">10km圏内</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Map Container -->
     <div id="map"></div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-controls">
+        <button id="btnGps" class="fab-btn" title="現在地を表示 (GPS)">
+            <span class="fab-icon">🎯</span>
+            <span class="fab-label">現在地</span>
+        </button>
+        <button id="btnOffice" class="fab-btn" title="安東営業所へ移動">
+            <span class="fab-icon">🏢</span>
+            <span class="fab-label">営業所</span>
+        </button>
+        <button id="btnToggleList" class="fab-btn fab-primary" title="一覧リストを表示/非表示">
+            <span class="fab-icon">📋</span>
+            <span class="fab-label">リスト (<span id="listCount">0</span>)</span>
+        </button>
+    </div>
+
+    <!-- Bottom List Drawer (Mobile Friendly) -->
+    <div id="listDrawer" class="list-drawer">
+        <div class="drawer-header" id="drawerHeader">
+            <div class="drawer-handle"></div>
+            <div class="drawer-title-row">
+                <h3 class="drawer-title">絞り込み一覧 (<span id="drawerCount">0</span>件)</h3>
+                <div class="drawer-actions">
+                    <select id="sortSelect" class="sort-select">
+                        <option value="distance_asc">距離が近い順</option>
+                        <option value="latest_desc">最新訪問日が新しい順</option>
+                        <option value="name_asc">名称順</option>
+                    </select>
+                    <button id="btnCloseDrawer" class="drawer-close-btn" aria-label="閉じる">✕</button>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-body" id="drawerList">
+            <!-- Dynamic Cards generated by app.js -->
+        </div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Map Data -->
     <script src="data_all.js"></script>
-    <!-- Custom JS -->
+    <!-- Custom Application Logic -->
     <script src="app.js"></script>
 </body>
 </html>
