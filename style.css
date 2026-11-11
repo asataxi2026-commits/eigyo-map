@@ -53,7 +53,7 @@ html, body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
 }
 
 .header-top {
@@ -85,8 +85,8 @@ html, body {
 
 .brand-text .sub-text {
     font-size: 0.72rem;
-    color: #94a3b8;
-    font-weight: 500;
+    color: #38bdf8;
+    font-weight: 600;
 }
 
 .header-stats {
@@ -96,17 +96,19 @@ html, body {
 }
 
 .stat-pill {
-    font-size: 0.72rem;
-    padding: 3px 8px;
+    font-size: 0.74rem;
+    padding: 4px 9px;
     background: rgba(255, 255, 255, 0.12);
     border-radius: 9999px;
     backdrop-filter: blur(4px);
     color: #e2e8f0;
     white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.18s ease;
 }
 
 .stat-pill strong {
-    font-weight: 700;
+    font-weight: 800;
     color: #ffffff;
 }
 
@@ -117,9 +119,93 @@ html, body {
 }
 
 .stat-pill.unvisited {
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+    border: 1px solid #fdba74;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.45);
+}
+
+.stat-pill.remain-highlight strong {
+    font-size: 0.9rem;
+    color: #fef08a;
+    margin: 0 2px;
+}
+
+.stat-pill.remain-highlight:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.65);
+}
+
+/* Progress Bar Overview Row */
+.progress-overview-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 5px 10px;
+}
+
+.progress-label-group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.progress-title {
+    font-size: 0.76rem;
+    color: #e2e8f0;
+    font-weight: 600;
+}
+
+.progress-title strong {
+    font-size: 0.9rem;
+    color: #34d399;
+    font-weight: 800;
+}
+
+.progress-sub {
+    font-size: 0.7rem;
+    color: #cbd5e1;
+}
+
+.progress-track {
+    flex-grow: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+}
+
+.btn-quick-remain {
     background: rgba(234, 88, 12, 0.25);
-    border: 1px solid rgba(234, 88, 12, 0.5);
-    color: #fdba74;
+    border: 1px solid #fb923c;
+    color: #fed7aa;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+}
+
+.btn-quick-remain:hover,
+.btn-quick-remain.active {
+    background: #ea580c;
+    color: #ffffff;
+    border-color: #ffffff;
 }
 
 /* Search Bar */
@@ -140,12 +226,12 @@ html, body {
 
 #searchInput {
     width: 100%;
-    padding: 8px 32px 8px 32px;
+    padding: 7px 32px 7px 32px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     color: #ffffff;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     outline: none;
     transition: all 0.2s ease;
 }
@@ -223,10 +309,11 @@ html, body {
 }
 
 .chip .badge {
-    background: rgba(0, 0, 0, 0.25);
-    padding: 1px 5px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 6px;
     border-radius: 10px;
     font-size: 0.68rem;
+    font-weight: 600;
 }
 
 .chip:hover {
@@ -238,13 +325,13 @@ html, body {
     background: #ffffff;
     color: var(--primary);
     border-color: #ffffff;
-    font-weight: 600;
+    font-weight: 700;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
 .chip.active .badge {
-    background: #e2e8f0;
-    color: var(--primary);
+    background: rgba(15, 23, 42, 0.15);
+    color: inherit;
 }
 
 /* Category specific colors on chips */
@@ -257,13 +344,208 @@ html, body {
 .chip.chip-unvisited.active { background: var(--status-unvisited); color: #fff; border-color: var(--status-unvisited); }
 
 /* ==========================================================================
-   Map Styling
+   Map Styling & Remaining Progress HUD Card
    ========================================================================== */
 #map {
     flex-grow: 1;
     width: 100%;
     height: 100%;
     z-index: 1;
+}
+
+/* Map Top-Left Remaining Progress HUD */
+.remain-hud {
+    position: fixed;
+    left: 12px;
+    bottom: 24px;
+    width: 285px;
+    max-width: calc(100vw - 140px);
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: var(--shadow-xl);
+    z-index: 800;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.remain-hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    background: linear-gradient(90deg, rgba(234, 88, 12, 0.35) 0%, rgba(15, 23, 42, 0.4) 100%);
+    cursor: pointer;
+    user-select: none;
+}
+
+.remain-hud-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.remain-hud-title strong {
+    color: #fef08a;
+    font-size: 0.92rem;
+}
+
+.remain-dot {
+    width: 9px;
+    height: 9px;
+    background: #fb923c;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #fb923c;
+    animation: pulseRing 1.6s infinite;
+}
+
+.remain-hud-toggle-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #ffffff;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.remain-hud.collapsed .remain-hud-body {
+    display: none;
+}
+
+.remain-hud.collapsed .remain-hud-toggle-btn {
+    transform: rotate(180deg);
+}
+
+.remain-hud-body {
+    padding: 8px 10px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.remain-hud-subtitle {
+    font-size: 0.68rem;
+    color: #94a3b8;
+}
+
+.remain-cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.remain-cat-item {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left-width: 4px;
+    border-radius: 8px;
+    padding: 5px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+}
+
+.remain-cat-item:hover,
+.remain-cat-item.active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.cat-border-kyotaku { border-left-color: var(--cat-kyotaku); }
+.cat-border-shisetsu { border-left-color: var(--cat-shisetsu); }
+.cat-border-byoin { border-left-color: var(--cat-byoin); }
+.cat-border-shogai { border-left-color: var(--cat-shogai); }
+
+.rc-name {
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.rc-nums {
+    font-size: 0.72rem;
+    color: #fdba74;
+    font-weight: 600;
+}
+
+.rc-nums strong {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.rc-nums small {
+    color: #94a3b8;
+    font-size: 0.66rem;
+}
+
+.remain-dist-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.remain-dist-label {
+    font-size: 0.68rem;
+    color: #cbd5e1;
+    margin-right: 2px;
+}
+
+.remain-dist-pill {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.remain-dist-pill strong {
+    color: #fdba74;
+    margin-left: 2px;
+}
+
+.remain-dist-pill:hover,
+.remain-dist-pill.active {
+    background: #ea580c;
+    color: #ffffff;
+    border-color: #fdba74;
+}
+.remain-dist-pill:hover strong,
+.remain-dist-pill.active strong {
+    color: #fef08a;
+}
+
+.remain-current-filter {
+    font-size: 0.72rem;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 5px 8px;
+    border-radius: 6px;
+    color: #cbd5e1;
+    text-align: center;
+}
+
+.remain-current-filter strong {
+    color: #fef08a;
 }
 
 /* Custom Marker Styling */
@@ -594,7 +876,7 @@ html, body {
 
 .drawer-title {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
@@ -700,7 +982,17 @@ html, body {
     }
     .stat-pill {
         font-size: 0.68rem;
-        padding: 2px 6px;
+        padding: 3px 7px;
+    }
+    .stat-pill.remain-highlight strong {
+        font-size: 0.8rem;
+    }
+    .progress-overview-row {
+        padding: 4px 8px;
+        gap: 6px;
+    }
+    .progress-sub {
+        display: none;
     }
     .chip {
         padding: 3px 8px;
@@ -714,5 +1006,20 @@ html, body {
     .fab-btn {
         padding: 7px 10px;
         font-size: 0.78rem;
+    }
+    .remain-hud {
+        left: 8px;
+        bottom: 18px;
+        width: 240px;
+        max-width: calc(100vw - 125px);
+    }
+    .remain-hud-header {
+        padding: 7px 10px;
+    }
+    .remain-hud-title {
+        font-size: 0.76rem;
+    }
+    .remain-hud-title strong {
+        font-size: 0.84rem;
     }
 }

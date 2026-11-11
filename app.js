@@ -1,5 +1,5 @@
 // ==========================================================================
-// あさタクシー 営業先エリアマップ アプリケーションロジック
+// あさタクシー 営業先エリアマップ アプリケーションロジック (2026年11月度 進捗＆残り可視化版)
 // ==========================================================================
 
 // 定数定義
@@ -20,7 +20,7 @@ let currentFilters = {
     search: ""
 };
 
-let currentSort = "distance_asc";
+let currentSort = "unvisited_first";
 let markers = [];
 let officeMarker = null;
 let userLocationMarker = null;
@@ -28,11 +28,11 @@ let markerLayer = L.layerGroup();
 
 // 地図の初期化
 const map = L.map('map', {
-    zoomControl: false // スマホで邪魔になりにくくするため右下やカスタム位置に
+    zoomControl: false // スマホで邪魔になりにくくするため右下に配置
 }).setView(OFFICE_COORDS, 13);
 
-// ズームコントロールを右下に配置
-L.control.zoom({ position: 'bottomright' }).addTo(map);
+// ズームコントロールを右上に配置（下部HUD・FABと重ならないように）
+L.control.zoom({ position: 'topright' }).addTo(map);
 
 // タイルレイヤー
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -71,13 +71,16 @@ function createPinIcon(category, isVisited) {
     const color = CATEGORY_COLORS[category] || CATEGORY_COLORS["その他"];
     const ringHtml = isVisited ? '' : '<div class="pin-unvisited-ring"></div>';
     
-    // 訪問済はチェックマーク、未接触は注意アイコン
+    // 訪問済は少し控えめな透明度にして「残り（未接触）」がすぐマップ上で際立つように工夫
+    const opacityStyle = isVisited ? 'opacity: 0.72;' : 'opacity: 1;';
+
+    // 訪問済はチェックマーク、未接触（残り）は目立つオレンジドット
     const symbol = isVisited 
         ? `<circle fill="#ffffff" cx="16" cy="15" r="6"/><path d="M13.5 15l2 2 3.5-3.5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
-        : `<circle fill="#ffffff" cx="16" cy="15" r="6"/><circle fill="#ea580c" cx="16" cy="15" r="3"/>`;
+        : `<circle fill="#ffffff" cx="16" cy="15" r="6"/><circle fill="#ea580c" cx="16" cy="15" r="3.5"/>`;
 
     const svg = `
-    <div class="custom-pin-wrapper" style="width:32px;height:42px;">
+    <div class="custom-pin-wrapper" style="width:32px;height:42px;${opacityStyle}">
         ${ringHtml}
         <svg viewBox="0 0 32 42" width="32" height="42" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));">
             <path fill="${color}" stroke="#ffffff" stroke-width="2" d="M16 2C8.268 2 2 8.268 2 16c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z"/>
@@ -101,7 +104,7 @@ function createPinIcon(category, isVisited) {
 function buildPopupContent(item) {
     const color = CATEGORY_COLORS[item.category] || CATEGORY_COLORS["その他"];
     const isVisited = item.status === "訪問済";
-    const statusText = isVisited ? `✔ 10月訪問済 (${item.latest_visit || "日付確認"})` : `⚠️ 10月未接触`;
+    const statusText = isVisited ? `✔ 11月訪問済 (${item.latest_visit || "日付確認"})` : `🔥 11月未接触（残り対象）`;
     const statusClass = isVisited ? "visited" : "unvisited";
     
     const distText = (item.distance !== null && item.distance !== undefined) 
@@ -149,6 +152,11 @@ function buildPopupContent(item) {
                 <div class="meta-row">
                     <span class="meta-label">法人名:</span>
                     <span class="meta-value">${item.corp}</span>
+                </div>` : ''}
+                ${item.latest_visit ? `
+                <div class="meta-row">
+                    <span class="meta-label">前回訪問:</span>
+                    <span class="meta-value">${item.latest_visit}</span>
                 </div>` : ''}
                 ${item.first_visit ? `
                 <div class="meta-row">
@@ -210,13 +218,16 @@ async function initApp() {
         </div>
     `, { minWidth: 220 });
 
-    // 2. 各営業先マーカーの作成
+    // 2. 各営業先マーカーの作成（未接触ピンを手前に表示）
     window.mapData.forEach((item, index) => {
         if (!item.lat || !item.lng) return;
 
         const isVisited = item.status === "訪問済";
         const icon = createPinIcon(item.category, isVisited);
-        const marker = L.marker([item.lat, item.lng], { icon: icon });
+        const marker = L.marker([item.lat, item.lng], {
+            icon: icon,
+            zIndexOffset: isVisited ? 0 : 300
+        });
 
         marker.bindPopup(buildPopupContent(item), {
             minWidth: 280,
@@ -231,7 +242,7 @@ async function initApp() {
         });
     });
 
-    // 3. バッジ集計
+    // 3. バッジ＆残り件数サマリー集計
     updateStatsBadges();
 
     // 4. イベントハンドラーの登録
@@ -241,38 +252,142 @@ async function initApp() {
     applyFilters();
 }
 
-// バッジ数字の更新
+// バッジ数字・進捗バー・残り件数パネルの更新
 function updateStatsBadges() {
-    const total = mapData.length;
+    const data = window.mapData;
+    const total = data.length;
     let visited = 0, unvisited = 0;
-    let kyotaku = 0, shisetsu = 0, byoin = 0, shogai = 0;
 
-    mapData.forEach(d => {
-        if (d.status === "訪問済") visited++;
+    const catStats = {
+        "居宅": { total: 0, rem: 0 },
+        "施設": { total: 0, rem: 0 },
+        "病院": { total: 0, rem: 0 },
+        "障害・包括": { total: 0, rem: 0 }
+    };
+
+    const distStats = {
+        3: { total: 0, rem: 0 },
+        5: { total: 0, rem: 0 },
+        10: { total: 0, rem: 0 }
+    };
+
+    data.forEach(d => {
+        const isVis = d.status === "訪問済";
+        if (isVis) visited++;
         else unvisited++;
 
-        if (d.category === "居宅") kyotaku++;
-        else if (d.category === "施設") shisetsu++;
-        else if (d.category === "病院") byoin++;
-        else if (d.category === "障害・包括") shogai++;
+        if (catStats[d.category]) {
+            catStats[d.category].total++;
+            if (!isVis) catStats[d.category].rem++;
+        }
+
+        if (d.distance !== null && d.distance !== undefined) {
+            [3, 5, 10].forEach(km => {
+                if (d.distance <= km) {
+                    distStats[km].total++;
+                    if (!isVis) distStats[km].rem++;
+                }
+            });
+        }
     });
 
+    const pct = total > 0 ? ((visited / total) * 100).toFixed(1) : "0.0";
+
+    // ヘッダー基本数値
     document.getElementById('totalCount').textContent = total;
     document.getElementById('visitedCount').textContent = visited;
     document.getElementById('unvisitedCount').textContent = unvisited;
 
-    document.getElementById('badgeKyotaku').textContent = kyotaku;
-    document.getElementById('badgeShisetsu').textContent = shisetsu;
-    document.getElementById('badgeByoin').textContent = byoin;
-    document.getElementById('badgeShogai').textContent = shogai;
+    // 進捗バー
+    document.getElementById('progressPercent').textContent = `${pct}%`;
+    document.getElementById('progressDetailText').textContent = `完了 ${visited}件 / 残り ${unvisited}件`;
+    document.getElementById('progressBarFill').style.width = `${pct}%`;
+
+    // ステータスチップ
+    document.getElementById('chipRemainCount').textContent = unvisited;
+    document.getElementById('chipVisitedCount').textContent = visited;
+
+    // カテゴリチップ（「残X/総Y」形式で一目で残りがわかる表示）
+    document.getElementById('badgeKyotaku').textContent = `残${catStats["居宅"].rem}/${catStats["居宅"].total}`;
+    document.getElementById('badgeShisetsu').textContent = `残${catStats["施設"].rem}/${catStats["施設"].total}`;
+    document.getElementById('badgeByoin').textContent = `残${catStats["病院"].rem}/${catStats["病院"].total}`;
+    document.getElementById('badgeShogai').textContent = `残${catStats["障害・包括"].rem}/${catStats["障害・包括"].total}`;
+
+    // 距離チップ（「残X/総Y」形式）
+    document.getElementById('badgeDist3').textContent = `残${distStats[3].rem}/${distStats[3].total}`;
+    document.getElementById('badgeDist5').textContent = `残${distStats[5].rem}/${distStats[5].total}`;
+    document.getElementById('badgeDist10').textContent = `残${distStats[10].rem}/${distStats[10].total}`;
+
+    // マップ上HUD（残り営業先パネル）
+    document.getElementById('hudRemainTotal').textContent = unvisited;
+    document.getElementById('hudRemKyotaku').textContent = catStats["居宅"].rem;
+    document.getElementById('hudTotKyotaku').textContent = catStats["居宅"].total;
+    document.getElementById('hudRemShisetsu').textContent = catStats["施設"].rem;
+    document.getElementById('hudTotShisetsu').textContent = catStats["施設"].total;
+    document.getElementById('hudRemByoin').textContent = catStats["病院"].rem;
+    document.getElementById('hudTotByoin').textContent = catStats["病院"].total;
+    document.getElementById('hudRemShogai').textContent = catStats["障害・包括"].rem;
+    document.getElementById('hudTotShogai').textContent = catStats["障害・包括"].total;
+
+    document.getElementById('hudRemDist3').textContent = `${distStats[3].rem}件`;
+    document.getElementById('hudRemDist5').textContent = `${distStats[5].rem}件`;
+    document.getElementById('hudRemDist10').textContent = `${distStats[10].rem}件`;
+}
+
+// フィルタチップのUI同期
+function syncChipUI() {
+    ['category', 'status', 'distance'].forEach(filterType => {
+        const val = currentFilters[filterType];
+        document.querySelectorAll(`.chip[data-filter="${filterType}"]`).forEach(b => {
+            if (b.getAttribute('data-val') === val) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+    });
+
+    // クイック残り表示ボタンのアクティブ状態
+    const btnQuick = document.getElementById('btnQuickRemaining');
+    if (btnQuick) {
+        if (currentFilters.status === "未接触") {
+            btnQuick.classList.add('active');
+            btnQuick.textContent = "✔ 全件表示に戻す";
+        } else {
+            btnQuick.classList.remove('active');
+            btnQuick.textContent = "⚠️ 残りのみ表示";
+        }
+    }
+
+    // HUD内カテゴリボタンのアクティブ状態
+    document.querySelectorAll('.remain-cat-item').forEach(btn => {
+        const cat = btn.getAttribute('data-cat');
+        if (currentFilters.category === cat && currentFilters.status === "未接触") {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // HUD内距離ボタンのアクティブ状態
+    document.querySelectorAll('.remain-dist-pill').forEach(btn => {
+        const dist = btn.getAttribute('data-dist');
+        if (currentFilters.distance === dist && currentFilters.status === "未接触") {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
 }
 
 // ==========================================================================
 // フィルター適用処理
 // ==========================================================================
 function applyFilters() {
+    syncChipUI();
     markerLayer.clearLayers();
     const filteredMarkers = [];
+    let visibleRemainCount = 0;
     const searchLower = currentFilters.search.toLowerCase().trim();
 
     markers.forEach(m => {
@@ -310,12 +425,20 @@ function applyFilters() {
 
         markerLayer.addLayer(m.marker);
         filteredMarkers.push(m);
+        if (d.status !== "訪問済") {
+            visibleRemainCount++;
+        }
     });
 
     // カウント表示の更新
     const count = filteredMarkers.length;
     document.getElementById('listCount').textContent = count;
     document.getElementById('drawerCount').textContent = count;
+    document.getElementById('drawerRemainCount').textContent = visibleRemainCount;
+
+    // HUDの表示中件数更新
+    document.getElementById('hudVisibleTotal').textContent = count;
+    document.getElementById('hudVisibleRemain').textContent = visibleRemainCount;
 
     // ドロワー内のリスト再描画
     renderDrawerList(filteredMarkers);
@@ -335,7 +458,14 @@ function renderDrawerList(filteredMarkers) {
 
     // ソート処理
     const sorted = [...filteredMarkers].sort((a, b) => {
-        if (currentSort === "distance_asc") {
+        if (currentSort === "unvisited_first") {
+            const visA = a.data.status === "訪問済" ? 1 : 0;
+            const visB = b.data.status === "訪問済" ? 1 : 0;
+            if (visA !== visB) return visA - visB;
+            const distA = a.data.distance !== null ? a.data.distance : 999;
+            const distB = b.data.distance !== null ? b.data.distance : 999;
+            return distA - distB;
+        } else if (currentSort === "distance_asc") {
             const distA = a.data.distance !== null ? a.data.distance : 999;
             const distB = b.data.distance !== null ? b.data.distance : 999;
             return distA - distB;
@@ -355,7 +485,7 @@ function renderDrawerList(filteredMarkers) {
         const isVisited = d.status === "訪問済";
         const badgeBg = isVisited ? "#ecfdf5" : "#fff7ed";
         const badgeColor = isVisited ? "#065f46" : "#9a3412";
-        const badgeText = isVisited ? `✔ 10月済 (${d.latest_visit || ""})` : `⚠️ 未接触`;
+        const badgeText = isVisited ? `✔ 11月済 (${d.latest_visit || ""})` : `🔥 残り未接触`;
 
         const card = document.createElement('div');
         card.className = 'drawer-item-card';
@@ -365,14 +495,13 @@ function renderDrawerList(filteredMarkers) {
                 <span class="drawer-card-badge" style="background:${badgeBg};color:${badgeColor}">${badgeText}</span>
             </div>
             <div class="drawer-card-bottom">
-                <span style="color:${color};font-weight:600;">${d.category}</span>
+                <span style="color:${color};font-weight:600;">${d.category}${d.sub_category ? ` (${d.sub_category})` : ''}</span>
                 <span>${d.distance !== null ? `📍 ${d.distance} km` : ''}</span>
                 <span style="font-size:0.75rem;">${d.phone || ''}</span>
             </div>
         `;
 
         card.addEventListener('click', () => {
-            // ドロワーの高さを低くするか閉じる
             closeDrawer();
             map.setView([d.lat, d.lng], 16, { animate: true });
             setTimeout(() => {
@@ -401,15 +530,67 @@ function toggleDrawer() {
 function setupEventListeners() {
     // フィルターチップクリック
     document.querySelectorAll('.chip').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
             const filterType = btn.getAttribute('data-filter');
             const filterVal = btn.getAttribute('data-val');
-
-            // 同グループのactive解除
-            document.querySelectorAll(`.chip[data-filter="${filterType}"]`).forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
             currentFilters[filterType] = filterVal;
+            applyFilters();
+        });
+    });
+
+    // ヘッダー「🔥 残りあと X 件」ピル & 「⚠️ 残りのみ表示」ボタン
+    const toggleRemainingOnly = () => {
+        if (currentFilters.status === "未接触") {
+            currentFilters.status = "all";
+        } else {
+            currentFilters.status = "未接触";
+        }
+        applyFilters();
+    };
+
+    document.getElementById('pillRemaining').addEventListener('click', toggleRemainingOnly);
+    document.getElementById('btnQuickRemaining').addEventListener('click', toggleRemainingOnly);
+
+    document.getElementById('pillVisited').addEventListener('click', () => {
+        if (currentFilters.status === "訪問済") {
+            currentFilters.status = "all";
+        } else {
+            currentFilters.status = "訪問済";
+        }
+        applyFilters();
+    });
+
+    // マップ左上・左下HUDの開閉トグル
+    document.getElementById('remainHudToggle').addEventListener('click', () => {
+        document.getElementById('remainHud').classList.toggle('collapsed');
+    });
+
+    // HUD内カテゴリ別「残り」ボタンクリック（そのカテゴリの未接触を即絞り込み）
+    document.querySelectorAll('.remain-cat-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cat = btn.getAttribute('data-cat');
+            if (currentFilters.category === cat && currentFilters.status === "未接触") {
+                currentFilters.category = "all";
+                currentFilters.status = "all";
+            } else {
+                currentFilters.category = cat;
+                currentFilters.status = "未接触";
+            }
+            applyFilters();
+        });
+    });
+
+    // HUD内距離別「残り」ボタンクリック（その距離圏内の未接触を即絞り込み）
+    document.querySelectorAll('.remain-dist-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dist = btn.getAttribute('data-dist');
+            if (currentFilters.distance === dist && currentFilters.status === "未接触") {
+                currentFilters.distance = "all";
+                currentFilters.status = "all";
+            } else {
+                currentFilters.distance = dist;
+                currentFilters.status = "未接触";
+            }
             applyFilters();
         });
     });
